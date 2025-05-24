@@ -1,11 +1,12 @@
 import React from 'react'
 import { PostCard } from './PostCard'
+import { posts } from '@/data'
 
 export const PostList = () => {
   return (
     <div className="flex flex-row flex-wrap gap-4">
-      {Array.from({ length: 6 }).map((item, index) => (
-        <PostCard key={index} />
+      {posts.map((post) => (
+        <PostCard post={post} key={post.id} />
       ))}
     </div>
   )
