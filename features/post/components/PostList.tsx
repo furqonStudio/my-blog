@@ -1,6 +1,6 @@
 import React from 'react'
-import { PostCard } from './PostCard'
 import { posts } from '@/data'
+import { PostCard } from './PostCard'
 
 export const PostList = () => {
   return (
