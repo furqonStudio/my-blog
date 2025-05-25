@@ -99,7 +99,7 @@ export function DataTable<TData extends { id: string | number }, TValue>({
   })
 
   return (
-    <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+    <>
       <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader className="bg-muted sticky top-0 z-10">
@@ -200,6 +200,6 @@ export function DataTable<TData extends { id: string | number }, TValue>({
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
