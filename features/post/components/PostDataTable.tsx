@@ -11,17 +11,9 @@ import {
 import { posts } from '@/data'
 import { IconDotsVertical } from '@tabler/icons-react'
 import { ColumnDef } from '@tanstack/react-table'
-import { z } from 'zod'
+import { Post } from '../post.type'
 
-const articleSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  publishedAt: z.string(),
-  category: z.string(),
-  author: z.string(),
-})
-
-const columns: ColumnDef<z.infer<typeof articleSchema>>[] = [
+const columns: ColumnDef<Post>[] = [
   {
     accessorKey: 'title',
     header: 'Title',
