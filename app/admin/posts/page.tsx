@@ -1,6 +1,5 @@
 import { SiteHeader } from '@/components/site-header'
-import { posts } from '@/data'
-import { DataTable } from '@/features/post/components/data-table'
+import PostDataTable from '@/features/post/components/PostDataTable'
 
 const Posts = () => {
   return (
@@ -9,7 +8,7 @@ const Posts = () => {
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <DataTable data={posts} />
+            <PostDataTable />
           </div>
         </div>
       </div>
