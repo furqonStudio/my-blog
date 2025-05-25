@@ -14,7 +14,10 @@ const Posts = () => {
             <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
               <div className="">
                 <Button asChild>
-                  <Link href="/posts/add" className="flex items-center gap-2">
+                  <Link
+                    href="/admin/posts/add"
+                    className="flex items-center gap-2"
+                  >
                     <Plus className="h-4 w-4" />
                     Tambah
                   </Link>
