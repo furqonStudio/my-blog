@@ -1,9 +1,6 @@
-import { ChartAreaInteractive } from '@/components/chart-area-interactive'
-import { DataTable } from '@/components/data-table'
-import { SectionCards } from '@/components/section-cards'
 import { SiteHeader } from '@/components/site-header'
 import { posts } from '@/data'
-import React from 'react'
+import { DataTable } from '@/features/post/components/data-table'
 
 const Posts = () => {
   return (
