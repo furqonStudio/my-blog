@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import EditorClient from '@/features/post/components/EditorClient'
+import PostEditor from '@/features/post/components/PostEditor'
 import React, { useState } from 'react'
 
 const AddPost = () => {
@@ -30,7 +32,6 @@ const AddPost = () => {
     <>
       <SiteHeader />
       <div className="flex flex-1 flex-col gap-6 px-6 py-6 md:flex-row">
-        {/* Kolom Konten */}
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4">
           <Input
             placeholder="Tambahkan judul artikel"
@@ -39,12 +40,16 @@ const AddPost = () => {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          <Textarea
+          {/* <Textarea
             placeholder="Tulis konten artikel di sini..."
             className="min-h-[300px] text-base"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-          />
+          /> */}
+          {/* <PostEditor /> */}
+          <div className="bg-red-300">
+            <EditorClient />
+          </div>
 
           <div className="mt-4">
             <Button type="submit">Publikasikan</Button>
