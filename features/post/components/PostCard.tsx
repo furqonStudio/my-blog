@@ -8,6 +8,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link' // Import Link dari Next.js untuk navigasi
 import { Post } from '@/features/post/post.type' // Import tipe Post
+import { formatDate } from '@/utils/formatDate'
 
 // Fungsi helper untuk menghapus tag HTML dari string konten
 function stripHtmlTags(html: string): string {
@@ -22,23 +23,13 @@ function stripHtmlTags(html: string): string {
   return div.textContent || div.innerText || ''
 }
 
-// Definisikan props untuk PostCard
 interface PostCardProps {
-  post: Post // Menerima seluruh objek post
+  post: Post
 }
 
 export const PostCard = ({ post }: PostCardProps) => {
   const { title, slug, image, publishedAt, content, category, author } = post
-  console.log('🚀 ~ PostCard ~ publishedAt:', publishedAt)
 
-  // Format tanggal agar lebih mudah dibaca
-  const date = new Date(publishedAt).toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-
-  // Ambil teks plain dari HTML dan potong untuk ringkasan di CardContent
   const plainTextContent = stripHtmlTags(content)
   const truncatedContent =
     plainTextContent.length > 150
@@ -50,7 +41,7 @@ export const PostCard = ({ post }: PostCardProps) => {
       <Card className="w-[350px] pt-0">
         <div className="relative h-48 overflow-hidden rounded-t-md">
           <Image
-            src={image} // Menggunakan URL gambar dari data post
+            src={image}
             alt={`Gambar Cover untuk ${title}`}
             className="aspect-video object-cover"
             fill
@@ -71,7 +62,7 @@ export const PostCard = ({ post }: PostCardProps) => {
         </CardContent>
         <CardFooter className="flex flex-col items-start gap-2">
           <p className="text-xs text-gray-500">
-            Oleh {author || 'Anonim'} &bull; {date}
+            Oleh {author || 'Anonim'} &bull; {formatDate(publishedAt)}
           </p>
           {category && (
             <span className="text-xs text-gray-400">Kategori: {category}</span>
