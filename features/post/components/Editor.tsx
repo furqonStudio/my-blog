@@ -1,10 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-
 import RichTextEditor, { BaseKit } from 'reactjs-tiptap-editor'
 
-import { locale } from 'reactjs-tiptap-editor/locale-bundle'
 import {
   BubbleMenuTwitter,
   BubbleMenuKatex,
@@ -161,7 +158,7 @@ const extensions = [
   TextDirection,
   Mention,
   Attachment.configure({
-    upload: (file: any) => {
+    upload: (file: File) => {
       // fake upload return base 64
       const reader = new FileReader()
       reader.readAsDataURL(file)
@@ -178,7 +175,7 @@ const extensions = [
   Katex,
   Excalidraw,
   Mermaid.configure({
-    upload: (file: any) => {
+    upload: (file: File) => {
       // fake upload return base 64
       const reader = new FileReader()
       reader.readAsDataURL(file)
@@ -192,7 +189,7 @@ const extensions = [
     },
   }),
   Drawer.configure({
-    upload: (file: any) => {
+    upload: (file: File) => {
       // fake upload return base 64
       const reader = new FileReader()
       reader.readAsDataURL(file)
@@ -208,86 +205,44 @@ const extensions = [
   Twitter,
 ]
 
-const DEFAULT = `<h1 dir="auto" style="text-align: center">Rich Text Editor</h1><p dir="auto">A modern WYSIWYG rich text editor based on <a target="_blank" rel="noopener noreferrer nofollow" class="link" href="https://github.com/scrumpy/tiptap">tiptap</a> and <a target="_blank" rel="noopener noreferrer nofollow" class="link" href="https://ui.shadcn.com/">shadcn ui</a> for Reactjs</p><p dir="auto"></p><p dir="auto" style="text-align: center"></p><p dir="auto"><div style="text-align: center;" class="image"><img height="auto" style="" src="https://picsum.photos/1920/1080.webp?t=1" flipx="false" flipy="false" width="500" align="center" inline="false"></div></p><p dir="auto"></p><div data-type="horizontalRule"><hr></div><h2 dir="auto">Demo</h2><p dir="auto">👉<a target="_blank" rel="noopener noreferrer nofollow" class="link" href="https://reactjs-tiptap-editor.vercel.app/">Demo</a></p><h2 dir="auto">Features</h2><ul><li><p dir="auto">Use <a target="_blank" rel="noopener noreferrer nofollow" class="link" href="https://ui.shadcn.com/">shadcn ui</a> components</p></li><li><p dir="auto">Markdown support</p></li><li><p dir="auto">TypeScript support</p></li><li><p dir="auto">I18n support (vi, en, zh, pt)</p></li><li><p dir="auto">React support</p></li><li><p dir="auto">Slash Commands</p></li><li><p dir="auto">Multi Column</p></li><li><p dir="auto">TailwindCss</p></li><li><p dir="auto">Support emoji</p></li><li><p dir="auto">Support iframe</p></li><li><p dir="auto">Support mermaid</p></li></ul><h2 dir="auto">Installation</h2><pre code="pnpm install reactjs-tiptap-editor" language="bash" linenumbers="true" wordwrap="false" tabsize="2" shouldfocus="false"><code>pnpm install reactjs-tiptap-editor</code></pre><p dir="auto"></p>`
-
-function debounce(func: any, wait: number) {
-  let timeout: NodeJS.Timeout
-  return function (...args: any[]) {
+function debounce<T extends (...args: unknown[]) => void>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout>
+  return (...args: Parameters<T>) => {
     clearTimeout(timeout)
-    // @ts-ignore
-    timeout = setTimeout(() => func.apply(this, args), wait)
+    timeout = setTimeout(() => {
+      func(...args)
+    }, wait)
   }
 }
 
-function Editor() {
-  const [content, setContent] = useState(DEFAULT)
-  const [theme, setTheme] = useState('light')
-  const [disable, setDisable] = useState(false)
+type Props = {
+  value: string
+  onChange: (val: string) => void
+}
 
-  const onValueChange = useCallback(
-    debounce((value: any) => {
-      setContent(value)
-    }, 300),
-    [],
-  )
+function Editor({ value, onChange }: Props) {
+  // const [theme, setTheme] = useState('light')
+  // const [disable, setDisable] = useState(false)
+
+  const debouncedOnChange = debounce((val: string | unknown) => {
+    if (typeof val === 'string') {
+      onChange(val)
+    }
+  }, 300)
 
   return (
     <main>
-      <div
-      // style={{
-      //   maxWidth: 1024,
-      //   margin: '88px auto 120px',
-      // }}
-      >
-        {/* <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: 10,
-          }}
-          className="buttonWrap"
-        >
-          <button onClick={() => locale.setLang('vi')}>Vietnamese</button>
-          <button onClick={() => locale.setLang('en')}>English</button>
-          <button onClick={() => locale.setLang('zh_CN')}>Chinese</button>
-          <button type="button" onClick={() => locale.setLang('pt_BR')}>
-            Português
-          </button>
-          <button type="button" onClick={() => locale.setLang('hu_HU')}>
-            Hungarian
-          </button>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            {theme === 'dark' ? 'Light' : 'Dark'}
-          </button>
-          <button onClick={() => setDisable(!disable)}>
-            {disable ? 'Editable' : 'Readonly'}
-          </button>
-          <button
-            onClick={() => {
-              window.open(
-                'https://github.com/hunghg255/reactjs-tiptap-editor-demo',
-                '_blank',
-              )
-            }}
-          >
-            Source Demo
-          </button>
-          <button
-            onClick={() => {
-              window.open('https://reactjs-tiptap-editor.vercel.app/', '_blank')
-            }}
-          >
-            Documentation
-          </button>
-        </div> */}
-
+      <div>
         <RichTextEditor
           output="html"
-          content={content as any}
-          onChangeContent={onValueChange}
+          content={value}
+          onChangeContent={debouncedOnChange}
           extensions={extensions}
-          dark={theme === 'dark'}
-          disabled={disable}
+          // dark={theme === 'dark'}
+          // disabled={disable}
           bubbleMenu={{
             render({ extensionsNames, editor, disabled }, bubbleDefaultDom) {
               return (
@@ -334,21 +289,6 @@ function Editor() {
             },
           }}
         />
-
-        {/* {typeof content === 'string' && (
-          <textarea
-            className="textarea"
-            readOnly
-            style={{
-              marginTop: 20,
-              height: 500,
-              width: '100%',
-              borderRadius: 4,
-              padding: 10,
-            }}
-            value={content}
-          />
-        )} */}
       </div>
     </main>
   )

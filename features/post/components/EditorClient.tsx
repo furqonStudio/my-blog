@@ -8,10 +8,15 @@ const Editor = dynamic(() => import('@/features/post/components/Editor'), {
   loading: () => <p>Loading...</p>,
 })
 
-const EditorClient = () => {
+type Props = {
+  value: string
+  onChange: (val: string) => void
+}
+
+const EditorClient = ({ value, onChange }: Props) => {
   return (
     <div className="flex bg-blue-400">
-      <Editor />
+      <Editor value={value} onChange={onChange} />
     </div>
   )
 }
