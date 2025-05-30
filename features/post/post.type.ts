@@ -3,8 +3,8 @@ export type Post = {
   title: string
   slug: string
   image: string
-  publishedAt: string
+  publishedAt: Date
   content: string
-  category?: string
-  author?: string
+  category: string | null
+  author: string | null
 }
