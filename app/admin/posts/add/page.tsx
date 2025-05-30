@@ -10,6 +10,8 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Image from 'next/image'
+import { Upload } from 'lucide-react'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
@@ -179,22 +181,55 @@ const AddPost = () => {
           <Controller
             name="image"
             control={control}
-            render={({ field: { onChange } }) => (
-              <div className="space-y-2 rounded-md border p-4">
-                <Label>Feature Image</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    onChange(file || undefined)
-                  }}
-                />
-                {typeof errors.image?.message === 'string' && (
-                  <p className="text-sm text-red-500">{errors.image.message}</p>
-                )}
-              </div>
-            )}
+            render={({ field: { onChange, value } }) => {
+              const previewUrl =
+                value instanceof File ? URL.createObjectURL(value) : null
+
+              return (
+                <div className="space-y-2 rounded-md border p-4">
+                  <Label>Feature Image</Label>
+
+                  {/* Kotak upload */}
+                  <label
+                    htmlFor="image-upload"
+                    className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
+                  >
+                    {previewUrl ? (
+                      <Image
+                        src={previewUrl}
+                        alt="Preview"
+                        fill
+                        className="h-full w-full rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-gray-500">
+                        <Upload className="mb-2 h-8 w-8" />
+                        <span className="text-sm">
+                          Klik untuk upload gambar
+                        </span>
+                      </div>
+                    )}
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 h-full w-full opacity-0"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        onChange(file || undefined)
+                      }}
+                    />
+                  </label>
+
+                  {/* Error message */}
+                  {typeof errors.image?.message === 'string' && (
+                    <p className="text-sm text-red-500">
+                      {errors.image.message}
+                    </p>
+                  )}
+                </div>
+              )
+            }}
           />
         </div>
       </form>
