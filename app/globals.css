@@ -178,8 +178,13 @@
 }
 
 
-@supports (color: color-mix(in lab, red, red)) {
+/* @supports (color: color-mix(in lab, red, red)) {
   * {
     outline-color: color-mix(in oklab, var(--ring) 20%, transparent);
   }
-}
+} */
+
+.richtext-outline {
+  outline: 0px solid #ebebeb;
+  outline-offset: 0px;
+}  

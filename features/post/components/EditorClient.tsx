@@ -16,11 +16,7 @@ type Props = {
 }
 
 const EditorClient = memo(({ value, onChange }: Props) => {
-  return (
-    <div className="flex">
-      <Editor value={value} onChange={onChange} />
-    </div>
-  )
+  return <Editor value={value} onChange={onChange} />
 })
 
 EditorClient.displayName = 'EditorClient'
