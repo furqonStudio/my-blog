@@ -160,13 +160,13 @@ const extensions = [
   Attachment.configure({
     upload: (file: File) => {
       const reader = new FileReader()
+      reader.readAsDataURL(file)
 
       return new Promise((resolve) => {
-        reader.onload = () => {
+        setTimeout(() => {
           const blob = convertBase64ToBlob(reader.result as string)
           resolve(URL.createObjectURL(blob))
-        }
-        reader.readAsDataURL(file)
+        }, 300)
       })
     },
   }),
@@ -180,12 +180,10 @@ const extensions = [
       reader.readAsDataURL(file)
 
       return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => {
+        setTimeout(() => {
           const blob = convertBase64ToBlob(reader.result as string)
           resolve(URL.createObjectURL(blob))
-        }
-        reader.readAsDataURL(file)
+        }, 300)
       })
     },
   }),
@@ -196,12 +194,10 @@ const extensions = [
       reader.readAsDataURL(file)
 
       return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => {
+        setTimeout(() => {
           const blob = convertBase64ToBlob(reader.result as string)
           resolve(URL.createObjectURL(blob))
-        }
-        reader.readAsDataURL(file)
+        }, 300)
       })
     },
   }),
