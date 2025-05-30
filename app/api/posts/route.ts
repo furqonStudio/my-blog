@@ -5,22 +5,37 @@ import fs from 'fs'
 import path from 'path'
 
 export async function POST(req: Request) {
-  const formData = await req.formData()
-
-  const title = formData.get('title') as string
-  const content = formData.get('content') as string
-  const category = formData.get('category') as string
-  const publishedAt = formData.get('publishedAt') as string
-  const author = formData.get('author') as string
-  const file = formData.get('image') as File
-
   try {
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const ext = file.name.split('.').pop()
-    const fileName = `${uuid()}.${ext}`
-    const filePath = path.join(process.cwd(), 'public/uploads', fileName)
-    fs.writeFileSync(filePath, buffer)
+    const formData = await req.formData()
+
+    const title = formData.get('title') as string
+    const content = formData.get('content') as string
+    const category = formData.get('category') as string
+    const publishedAt = formData.get('publishedAt') as string
+    const author = formData.get('author') as string
+    const file = formData.get('image') as File | null
+
+    // Validasi sederhana
+    if (!title || !content || !category || !publishedAt || !author) {
+      return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
+    }
+
+    let imagePath: string | null = null
+
+    if (file && file.name) {
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const ext = file.name.split('.').pop()
+      const fileName = `${uuid()}.${ext}`
+      const uploadDir = path.join(process.cwd(), 'public/uploads')
+      const filePath = path.join(uploadDir, fileName)
+
+      // Pastikan direktori `public/uploads` tersedia
+      fs.mkdirSync(uploadDir, { recursive: true })
+      fs.writeFileSync(filePath, buffer)
+
+      imagePath = `/uploads/${fileName}`
+    }
 
     const slug = title
       .toLowerCase()
@@ -32,16 +47,16 @@ export async function POST(req: Request) {
         title,
         slug,
         content,
-        image: `/uploads/${fileName}`,
         category,
         publishedAt: new Date(publishedAt),
         author,
+        image: imagePath ?? '',
       },
     })
 
     return NextResponse.json(newPost, { status: 201 })
   } catch (err) {
-    console.error('Error saat membuat post:', err)
+    console.error('❌ Error saat membuat post:', err)
     return NextResponse.json({ error: 'Gagal membuat post' }, { status: 500 })
   }
 }
