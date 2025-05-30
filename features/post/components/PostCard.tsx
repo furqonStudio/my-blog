@@ -29,6 +29,7 @@ interface PostCardProps {
 
 export const PostCard = ({ post }: PostCardProps) => {
   const { title, slug, image, publishedAt, content, category, author } = post
+  console.log('🚀 ~ PostCard ~ publishedAt:', publishedAt)
 
   // Format tanggal agar lebih mudah dibaca
   const date = new Date(publishedAt).toLocaleDateString('id-ID', {
@@ -57,13 +58,12 @@ export const PostCard = ({ post }: PostCardProps) => {
             style={{ objectFit: 'cover' }}
           />
         </div>
-        {/* Mengurangi padding bawah CardHeader */}
-        <CardHeader className="pb-2">
+        <CardHeader>
           <CardTitle>
             <h3>{title}</h3>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-2">
+        <CardContent className="-mt-2">
           <div
             className="text-sm text-gray-700"
             dangerouslySetInnerHTML={{ __html: truncatedContent }}
