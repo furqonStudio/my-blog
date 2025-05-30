@@ -4,21 +4,35 @@ import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import EditorClient from '@/features/post/components/EditorClient'
 import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 const AddPost = () => {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [category, setCategory] = useState('')
-  const [publishedAt, setPublishedAt] = useState('')
-  const [author, setAuthor] = useState('')
-  const [image, setImage] = useState<File | null>(null)
+  console.log('RENDERD')
+  const [form, setForm] = useState({
+    title: '',
+    category: '',
+    publishedAt: '',
+    author: '',
+    image: null as File | null,
+  })
+  const [contentState, setContentState] = useState('')
+
+  const setContent = useCallback((val: string) => {
+    setContentState(val)
+  }, [])
+
   const [loading, setLoading] = useState(false)
 
   const router = useRouter()
+
+  const handleChange = (field: string, value: string | File | null) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,12 +40,12 @@ const AddPost = () => {
 
     try {
       const formData = new FormData()
-      formData.append('title', title)
-      formData.append('content', content)
-      formData.append('category', category)
-      formData.append('publishedAt', publishedAt)
-      formData.append('author', author)
-      if (image) formData.append('image', image)
+      formData.append('title', form.title)
+      formData.append('content', contentState)
+      formData.append('category', form.category)
+      formData.append('publishedAt', form.publishedAt)
+      formData.append('author', form.author)
+      if (form.image) formData.append('image', form.image)
 
       const res = await fetch('/api/posts', {
         method: 'POST',
@@ -63,20 +77,12 @@ const AddPost = () => {
           <Input
             placeholder="Judul artikel"
             className="px-3 py-5 text-3xl font-bold"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={form.title}
+            onChange={(e) => handleChange('title', e.target.value)}
             required
           />
 
-          <Textarea
-            placeholder="Tulis konten artikel di sini..."
-            className="min-h-[300px] text-base"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-
-          <EditorClient value={content} onChange={setContent} />
+          <EditorClient value={contentState} onChange={setContent} />
 
           <div className="mt-4">
             <Button type="submit" disabled={loading}>
@@ -91,8 +97,8 @@ const AddPost = () => {
             <Label>Kategori</Label>
             <Input
               placeholder="Contoh: Teknologi"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={form.category}
+              onChange={(e) => handleChange('category', e.target.value)}
             />
           </div>
 
@@ -100,8 +106,8 @@ const AddPost = () => {
             <Label>Tanggal Publikasi</Label>
             <Input
               type="date"
-              value={publishedAt}
-              onChange={(e) => setPublishedAt(e.target.value)}
+              value={form.publishedAt}
+              onChange={(e) => handleChange('publishedAt', e.target.value)}
             />
           </div>
 
@@ -109,8 +115,8 @@ const AddPost = () => {
             <Label>Penulis</Label>
             <Input
               placeholder="Nama penulis"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
+              value={form.author}
+              onChange={(e) => handleChange('author', e.target.value)}
             />
           </div>
 
@@ -120,9 +126,8 @@ const AddPost = () => {
               type="file"
               accept="image/*"
               onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setImage(e.target.files[0])
-                }
+                const file = e.target.files?.[0] || null
+                handleChange('image', file)
               }}
             />
           </div>
