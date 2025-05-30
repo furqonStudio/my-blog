@@ -1,8 +1,12 @@
 import React from 'react'
-import { posts } from '@/data'
 import { PostCard } from './PostCard'
+import { Post } from '../post.type'
 
-export const PostList = () => {
+type PostListProps = {
+  posts: Post[]
+}
+
+export const PostList = ({ posts }: PostListProps) => {
   return (
     <div className="flex flex-row flex-wrap gap-4">
       {posts.map((post) => (
