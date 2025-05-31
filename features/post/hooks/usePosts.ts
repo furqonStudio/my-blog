@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+// features/posts/hooks/usePosts.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Post } from '../post.type'
 
 export type PostFormValues = {
@@ -10,11 +11,11 @@ export type PostFormValues = {
 
 const fetchPosts = async (): Promise<Post[]> => {
   const res = await fetch('/api/posts')
-  if (!res.ok) throw new Error('Gagal mengambil posts')
+  if (!res.ok) throw new Error('Gagal mengambil post')
   return (await res.json()) as Post[]
 }
 
-const addPost = async (data: PostFormValues) => {
+const addPost = async (data: PostFormValues): Promise<Post> => {
   const formData = new FormData()
   formData.append('title', data.title)
   formData.append('content', data.content)
@@ -26,9 +27,12 @@ const addPost = async (data: PostFormValues) => {
     body: formData,
   })
 
-  if (!res.ok) throw new Error('Gagal menyimpan post')
+  if (!res.ok) {
+    const err = await res.json().catch(() => null)
+    throw new Error(err?.message || 'Gagal menyimpan post')
+  }
 
-  return res.json()
+  return (await res.json()) as Post
 }
 
 export const usePosts = () => {
@@ -39,5 +43,11 @@ export const usePosts = () => {
 }
 
 export const useAddPost = () => {
-  return useMutation(addPost)
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: addPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+    },
+  })
 }
