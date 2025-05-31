@@ -77,9 +77,11 @@ const AddPost = () => {
     addPost.mutate(data, {
       onSuccess: () => {
         toast.success('Post berhasil dipublikasikan!')
-        router.push('/posts')
+        // router.push('/posts')
       },
-      onError: () => {
+      onError: (error) => {
+        console.error('Add post failed:', error)
+
         toast.error('Gagal menyimpan post.')
       },
     })

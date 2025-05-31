@@ -11,13 +11,26 @@ export async function POST(req: Request) {
     const title = formData.get('title') as string
     const content = formData.get('content') as string
     const category = formData.get('category') as string
-    const publishedAt = formData.get('publishedAt') as string
-    const author = formData.get('author') as string
+    const publishedAt = new Date()
+    const author = 'Furqon'
     const file = formData.get('image') as File | null
 
-    // Validasi sederhana
-    if (!title || !content || !category || !publishedAt || !author) {
+    if (!title || !content || !category || !file) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
+    }
+
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'File harus berupa gambar' },
+        { status: 400 },
+      )
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'Ukuran gambar maksimal 2MB' },
+        { status: 400 },
+      )
     }
 
     let imagePath: string | null = null
@@ -42,12 +55,24 @@ export async function POST(req: Request) {
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
 
+    let categoryRecord = await prisma.category.findUnique({
+      where: { name: category },
+    })
+
+    if (!categoryRecord) {
+      categoryRecord = await prisma.category.create({
+        data: { name: category },
+      })
+    }
+
     const newPost = await prisma.post.create({
       data: {
         title,
         slug,
         content,
-        category,
+        category: {
+          connect: { id: categoryRecord.id },
+        },
         publishedAt: new Date(publishedAt),
         author,
         image: imagePath ?? '',
