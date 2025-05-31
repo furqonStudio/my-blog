@@ -43,9 +43,29 @@ export const useAddCategory = () => {
 
 export const useDeleteCategory = () => {
   const queryClient = useQueryClient()
+  // return useMutation({
+  //   mutationFn: deleteCategory,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ['categories'] })
+  //   },
+  // })
   return useMutation({
     mutationFn: deleteCategory,
-    onSuccess: () => {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['categories'] })
+
+      const previous = queryClient.getQueryData<Category[]>(['categories'])
+      queryClient.setQueryData<Category[]>(
+        ['categories'],
+        (old) => old?.filter((cat) => cat.id !== id) ?? [],
+      )
+
+      return { previous }
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['categories'], context?.previous)
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
     },
   })

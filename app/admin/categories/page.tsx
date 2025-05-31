@@ -27,7 +27,6 @@ import { toast } from 'sonner'
 
 const Categories = () => {
   const [name, setName] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const { data: categories, isLoading, isError } = useCategories()
   const addCategory = useAddCategory()
@@ -52,7 +51,6 @@ const Categories = () => {
     deleteCategory.mutate(id, {
       onSuccess: () => {
         toast.success('Kategori berhasil dihapus.')
-        setSelectedId(null)
       },
       onError: () => {
         toast.error('Gagal menghapus kategori.')
@@ -76,8 +74,12 @@ const Categories = () => {
                 onChange={(e) => setName(e.target.value)}
                 className="flex-1"
               />
-              <Button type="submit" className="w-full sm:w-auto">
-                Tambah
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={!name.trim() || addCategory.isPending}
+              >
+                {addCategory.isPending ? 'Menambah...' : 'Tambah'}
               </Button>
             </form>
 
@@ -112,11 +114,7 @@ const Categories = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => setSelectedId(category.id)}
-                      >
+                      <Button variant="destructive" size="icon">
                         <Trash className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -133,7 +131,7 @@ const Categories = () => {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => selectedId && handleDelete(selectedId)}
+                          onClick={() => handleDelete(category.id)}
                         >
                           Hapus
                         </AlertDialogAction>
