@@ -1,6 +1,7 @@
 'use client'
 
 import { SiteHeader } from '@/components/site-header'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   useAddCategory,
   useCategories,
@@ -79,11 +81,28 @@ const Categories = () => {
               </Button>
             </form>
 
+            {isError && (
+              <Alert variant="destructive">
+                <AlertTitle>Gagal memuat kategori</AlertTitle>
+                <AlertDescription>
+                  Terjadi kesalahan saat mengambil data. Silakan coba lagi
+                  nanti.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {isLoading && <p>Memuat kategori...</p>}
-              {isError && (
-                <p className="text-red-500">Gagal memuat kategori.</p>
+              {isLoading &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                ))}
+
+              {!isLoading && categories?.length === 0 && (
+                <div className="text-muted-foreground col-span-full py-4 text-center">
+                  Belum ada kategori.
+                </div>
               )}
+
               {categories?.map((category) => (
                 <div
                   key={category.id}
