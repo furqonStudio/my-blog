@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { NavMain } from './nav-main'
+import { Grid2X2 } from 'lucide-react'
 
 const data = {
   user: {
@@ -39,21 +40,11 @@ const data = {
       url: '/admin/posts',
       icon: IconListDetails,
     },
-    // {
-    //   title: 'Analytics',
-    //   url: '#',
-    //   icon: IconChartBar,
-    // },
-    // {
-    //   title: 'Projects',
-    //   url: '#',
-    //   icon: IconFolder,
-    // },
-    // {
-    //   title: 'Team',
-    //   url: '#',
-    //   icon: IconUsers,
-    // },
+    {
+      title: 'Categories',
+      url: '/admin/categories',
+      icon: Grid2X2,
+    },
   ],
   navSecondary: [
     {
