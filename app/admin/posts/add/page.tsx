@@ -16,12 +16,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Category } from '@/features/post/categories/category.type'
+import {
+  useAddCategory,
+  useCategories,
+  useDeleteCategory,
+} from '@/features/categories/hooks/useCategories'
 import EditorClient from '@/features/post/components/EditorClient'
+import { useAddPost } from '@/features/post/hooks/usePosts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronDown, Plus, Trash } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -32,9 +37,7 @@ const postSchema = z.object({
       const stripped = val.replace(/<[^>]+>/g, '').trim()
       return stripped.length > 0
     },
-    {
-      message: 'Konten wajib diisi',
-    },
+    { message: 'Konten wajib diisi' },
   ),
   category: z.string().optional(),
   image: z
@@ -49,7 +52,6 @@ const AddPost = () => {
   const {
     control,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -60,101 +62,53 @@ const AddPost = () => {
       image: undefined,
     },
   })
-  const [categories, setCategories] = useState<Category[]>([])
-  console.log('🚀 ~ AddPost ~ categories:', categories)
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch('/api/categories')
-        if (!res.ok) throw new Error('Gagal mengambil kategori')
-
-        const data: Category[] = await res.json()
-        setCategories(data)
-      } catch (err) {
-        console.error('❌ Error mengambil kategori:', err)
-      }
-    }
-
-    fetchCategories()
-  }, [])
+  const { data: categories = [], isLoading: isLoadingCategories } =
+    useCategories()
+  const addCategoryMutation = useAddCategory()
+  const deleteCategoryMutation = useDeleteCategory()
+  const addPostMutation = useAddPost()
+  const router = useRouter()
 
   const [newCategory, setNewCategory] = useState('')
   const [open, setOpen] = useState(false)
 
-  const handleAddCategory = async () => {
+  const handleAddCategory = () => {
     const trimmed = newCategory.trim()
     if (!trimmed) return
 
-    // Cek duplikat
     if (categories.some((c) => c.name === trimmed)) return
 
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
-      })
-
-      if (!res.ok) throw new Error('Gagal menambah kategori')
-
-      const newCat: Category = await res.json()
-      setCategories((prev) => [...prev, newCat])
-      setNewCategory('')
-    } catch (err) {
-      console.error('❌ Gagal tambah kategori:', err)
-    }
+    addCategoryMutation.mutate(trimmed, {
+      onSuccess: () => {
+        setNewCategory('')
+      },
+      onError: (error) => {
+        console.error('❌ Gagal tambah kategori:', error)
+      },
+    })
   }
 
-  const handleDeleteCategory = async (id: string) => {
-    const confirm = window.confirm(`Yakin ingin menghapus kategori ?`)
-    if (!confirm) return
+  const handleDeleteCategory = (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus kategori ?')) return
 
-    try {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) throw new Error('Gagal menghapus kategori')
-
-      setCategories((prev) => prev.filter((cat) => cat.id !== id))
-    } catch (err) {
-      console.error('❌ Gagal hapus kategori:', err)
-    }
+    deleteCategoryMutation.mutate(id, {
+      onError: (error) => {
+        console.error('❌ Gagal hapus kategori:', error)
+      },
+    })
   }
 
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
-  const onSubmit = async (data: PostFormValues) => {
-    setLoading(true)
-    try {
-      const formData = new FormData()
-      formData.append('title', data.title)
-      formData.append('content', data.content)
-      if (data.category) formData.append('category', data.category)
-      if (data.image) formData.append('image', data.image)
-
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) throw new Error('Gagal menyimpan post')
-
-      const result = await res.json()
-      console.log('✅ Post dibuat:', result)
-      router.push('/posts')
-    } catch (err) {
-      console.error('❌ Error:', err)
-    } finally {
-      setLoading(false)
-    }
+  const onSubmit = (data: PostFormValues) => {
+    addPostMutation.mutate(data, {
+      onSuccess: () => {
+        router.push('/posts')
+      },
+      onError: (error) => {
+        console.error('❌ Error:', error)
+      },
+    })
   }
-
-  const contentValue = watch('content')
-  console.log('📄 Content:', contentValue)
-
   return (
     <>
       <SiteHeader />
@@ -162,9 +116,7 @@ const AddPost = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="flex flex-col gap-6 px-6 py-6 md:flex-row"
       >
-        {/* Form Utama */}
         <div className="flex flex-1 flex-col gap-4">
-          {/* Judul */}
           <Controller
             name="title"
             control={control}
@@ -172,7 +124,9 @@ const AddPost = () => {
               <div>
                 <Input
                   placeholder="Judul artikel"
-                  className={`px-3 py-5 text-3xl font-bold ${errors.title ? 'border-red-500 bg-red-500/5' : ''}`}
+                  className={`px-3 py-5 text-3xl font-bold ${
+                    errors.title ? 'border-red-500 bg-red-500/5' : ''
+                  }`}
                   {...field}
                 />
                 {errors.title && (
@@ -184,7 +138,6 @@ const AddPost = () => {
             )}
           />
 
-          {/* Konten */}
           <Controller
             name="content"
             control={control}
@@ -201,8 +154,8 @@ const AddPost = () => {
           />
 
           <div className="mt-4">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Menyimpan...' : 'Publikasikan'}
+            <Button type="submit" disabled={addPostMutation.isLoading}>
+              {addPostMutation.isLoading ? 'Menyimpan...' : 'Publikasikan'}
             </Button>
           </div>
         </div>
@@ -232,43 +185,48 @@ const AddPost = () => {
                     <CommandInput placeholder="Cari kategori..." />
                     <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                     <CommandGroup>
-                      {categories.map((cat) => (
-                        <CommandItem
-                          key={cat.id}
-                          value={cat.id}
-                          className="flex items-center justify-between"
-                        >
-                          <div
-                            className="flex-1 cursor-pointer"
-                            onClick={() => {
-                              field.onChange(cat.id)
-                              setOpen(false)
-                            }}
+                      {isLoadingCategories ? (
+                        <div className="text-muted-foreground p-4 text-sm">
+                          Memuat kategori...
+                        </div>
+                      ) : (
+                        categories.map((cat) => (
+                          <CommandItem
+                            key={cat.id}
+                            value={cat.id}
+                            className="flex items-center justify-between"
                           >
-                            {cat.name}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {field.value === cat.id && (
-                              <Check className="text-primary h-4 w-4" />
-                            )}
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation()
-                                handleDeleteCategory(cat.id)
+                            <div
+                              className="flex-1 cursor-pointer"
+                              onClick={() => {
+                                field.onChange(cat.id)
+                                setOpen(false)
                               }}
                             >
-                              <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
-                            </button>
-                          </div>
-                        </CommandItem>
-                      ))}
+                              {cat.name}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {field.value === cat.id && (
+                                <Check className="text-primary h-4 w-4" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteCategory(cat.id)
+                                }}
+                              >
+                                <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
+                              </button>
+                            </div>
+                          </CommandItem>
+                        ))
+                      )}
                     </CommandGroup>
                   </Command>
                 </PopoverContent>
               </Popover>
 
-              {/* Tambah kategori baru */}
               <div className="flex gap-2 pt-2">
                 <Input
                   placeholder="Kategori baru"
@@ -279,6 +237,7 @@ const AddPost = () => {
                   type="button"
                   variant="outline"
                   onClick={handleAddCategory}
+                  disabled={addCategoryMutation.isLoading}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>

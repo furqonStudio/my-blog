@@ -10,10 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { posts } from '@/data'
 import { IconDotsVertical } from '@tabler/icons-react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Post } from '../post.type'
+import { usePosts } from '../hooks/usePosts'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const columns: ColumnDef<Post>[] = [
   {
@@ -75,5 +76,11 @@ const columns: ColumnDef<Post>[] = [
 ]
 
 export default function PostDataTable() {
+  const { data: posts = [], isLoading: isLoadingPosts } = usePosts()
+
+  if (isLoadingPosts) {
+    return <Skeleton className="h-32 w-full" />
+  }
+
   return <DataTable columns={columns} data={posts} />
 }
