@@ -11,7 +11,20 @@ import { z } from 'zod'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { Upload } from 'lucide-react'
+import { ChevronDown, Upload } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command'
+import { Check, Plus, X } from 'lucide-react'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
@@ -25,8 +38,6 @@ const postSchema = z.object({
     },
   ),
   category: z.string().optional(),
-  publishedAt: z.string().optional(),
-  author: z.string().optional(),
   image: z
     .any()
     .refine((file) => file instanceof File, 'Gambar tidak valid')
@@ -47,11 +58,29 @@ const AddPost = () => {
       title: '',
       content: '',
       category: '',
-      publishedAt: '',
-      author: '',
       image: undefined,
     },
   })
+
+  const [categories, setCategories] = useState<string[]>([
+    'Teknologi',
+    'Lifestyle',
+    'Bisnis',
+  ]) // data awal
+  const [newCategory, setNewCategory] = useState('')
+  const [open, setOpen] = useState(false)
+
+  const handleAddCategory = () => {
+    const trimmed = newCategory.trim()
+    if (trimmed && !categories.includes(trimmed)) {
+      setCategories((prev) => [...prev, trimmed])
+      setNewCategory('')
+    }
+  }
+
+  const handleDeleteCategory = (cat: string) => {
+    setCategories((prev) => prev.filter((c) => c !== cat))
+  }
 
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -63,8 +92,6 @@ const AddPost = () => {
       formData.append('title', data.title)
       formData.append('content', data.content)
       if (data.category) formData.append('category', data.category)
-      if (data.publishedAt) formData.append('publishedAt', data.publishedAt)
-      if (data.author) formData.append('author', data.author)
       if (data.image) formData.append('image', data.image)
 
       const res = await fetch('/api/posts', {
@@ -139,99 +166,75 @@ const AddPost = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="flex w-full flex-col gap-6 md:max-w-sm">
-          {/* Kategori */}
-          <Controller
-            name="category"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2 rounded-md border p-4">
-                <Label>Kategori</Label>
-                <Input placeholder="Contoh: Teknologi" {...field} />
-              </div>
-            )}
-          />
-
-          {/* Tanggal Publikasi */}
-          <Controller
-            name="publishedAt"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2 rounded-md border p-4">
-                <Label>Tanggal Publikasi</Label>
-                <Input type="date" {...field} />
-              </div>
-            )}
-          />
-
-          {/* Penulis */}
-          <Controller
-            name="author"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2 rounded-md border p-4">
-                <Label>Penulis</Label>
-                <Input placeholder="Nama penulis" {...field} />
-              </div>
-            )}
-          />
-
-          {/* Gambar */}
-          <Controller
-            name="image"
-            control={control}
-            render={({ field: { onChange, value } }) => {
-              const previewUrl =
-                value instanceof File ? URL.createObjectURL(value) : null
-
-              return (
-                <div className="space-y-2 rounded-md border p-4">
-                  <Label>Feature Image</Label>
-
-                  {/* Kotak upload */}
-                  <label
-                    htmlFor="image-upload"
-                    className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
+        <Controller
+          name="category"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2 rounded-md border p-4">
+              <Label>Kategori</Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between"
                   >
-                    {previewUrl ? (
-                      <Image
-                        src={previewUrl}
-                        alt="Preview"
-                        fill
-                        className="h-full w-full rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-gray-500">
-                        <Upload className="mb-2 h-8 w-8" />
-                        <span className="text-sm">
-                          Klik untuk upload gambar
-                        </span>
-                      </div>
-                    )}
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 h-full w-full opacity-0"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        onChange(file || undefined)
-                      }}
-                    />
-                  </label>
+                    {field.value ? field.value : 'Pilih kategori'}
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Cari kategori..." />
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandGroup>
+                      {categories.map((cat) => (
+                        <CommandItem
+                          key={cat}
+                          value={cat}
+                          onSelect={() => {
+                            field.onChange(cat)
+                            setOpen(false)
+                          }}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{cat}</span>
+                          {field.value === cat && (
+                            <Check className="text-primary h-4 w-4" />
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteCategory(cat)
+                            }}
+                          >
+                            <X className="text-muted-foreground ml-2 h-4 w-4 hover:text-red-500" />
+                          </button>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-                  {/* Error message */}
-                  {typeof errors.image?.message === 'string' && (
-                    <p className="text-sm text-red-500">
-                      {errors.image.message}
-                    </p>
-                  )}
-                </div>
-              )
-            }}
-          />
-        </div>
+              {/* Tambah kategori baru */}
+              <div className="flex gap-2 pt-2">
+                <Input
+                  placeholder="Kategori baru"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddCategory}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        />
       </form>
     </>
   )
