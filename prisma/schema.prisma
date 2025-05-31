@@ -9,12 +9,19 @@ datasource db {
 }
 
 model Post {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  slug        String   @unique
+  slug        String    @unique
   image       String
-  publishedAt DateTime @default(now())
+  publishedAt DateTime  @default(now())
   content     String
-  category    String? // opsional
-  author      String? // opsional
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  author      String?
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  posts Post[]
 }
