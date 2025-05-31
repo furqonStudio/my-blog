@@ -10,32 +10,21 @@ import {
   CommandItem,
 } from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  useAddCategory,
-  useCategories,
-  useDeleteCategory,
-} from '@/features/categories/hooks/useCategories'
+import { Category } from '@/features/categories/category.type'
 import EditorClient from '@/features/post/components/EditorClient'
-import { useAddPost } from '@/features/post/hooks/usePosts'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, ChevronDown, Plus, Trash } from 'lucide-react'
+import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
@@ -44,21 +33,26 @@ const postSchema = z.object({
       const stripped = val.replace(/<[^>]+>/g, '').trim()
       return stripped.length > 0
     },
-    { message: 'Konten wajib diisi' },
+    {
+      message: 'Konten wajib diisi',
+    },
   ),
   category: z.string().optional(),
   image: z
     .any()
-    .optional()
-    .refine((file) => !file || file instanceof File, {
-      message: 'Gambar tidak valid',
-    }),
+    .refine((file) => file instanceof File, 'Gambar tidak valid')
+    .optional(),
 })
 
 type PostFormValues = z.infer<typeof postSchema>
 
 const AddPost = () => {
-  const form = useForm<PostFormValues>({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
     defaultValues: {
       title: '',
@@ -67,164 +61,216 @@ const AddPost = () => {
       image: undefined,
     },
   })
+  const [categories, setCategories] = useState<Category[]>([])
+  console.log('🚀 ~ AddPost ~ categories:', categories)
 
-  const { control, handleSubmit } = form
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        if (!res.ok) throw new Error('Gagal mengambil kategori')
 
-  const { data: categories = [], isLoading: isLoadingCategories } =
-    useCategories()
-  const addCategoryMutation = useAddCategory()
-  const deleteCategoryMutation = useDeleteCategory()
-  const addPostMutation = useAddPost()
-  const router = useRouter()
+        const data: Category[] = await res.json()
+        setCategories(data)
+      } catch (err) {
+        console.error('❌ Error mengambil kategori:', err)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const [newCategory, setNewCategory] = useState('')
   const [open, setOpen] = useState(false)
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const trimmed = newCategory.trim()
-    if (!trimmed || categories.some((c) => c.name === trimmed)) return
+    if (!trimmed) return
 
-    addCategoryMutation.mutate(trimmed, {
-      onSuccess: () => setNewCategory(''),
-      onError: (error) => console.error('❌ Gagal tambah kategori:', error),
-    })
+    // Cek duplikat
+    if (categories.some((c) => c.name === trimmed)) return
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+
+      if (!res.ok) throw new Error('Gagal menambah kategori')
+
+      const newCat: Category = await res.json()
+      setCategories((prev) => [...prev, newCat])
+      setNewCategory('')
+    } catch (err) {
+      console.error('❌ Gagal tambah kategori:', err)
+    }
   }
 
-  const handleDeleteCategory = (id: string) => {
-    if (!window.confirm('Yakin ingin menghapus kategori ?')) return
-    deleteCategoryMutation.mutate(id, {
-      onError: (error) => console.error('❌ Gagal hapus kategori:', error),
-    })
+  const handleDeleteCategory = async (id: string) => {
+    const confirm = window.confirm(`Yakin ingin menghapus kategori ?`)
+    if (!confirm) return
+
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) throw new Error('Gagal menghapus kategori')
+
+      setCategories((prev) => prev.filter((cat) => cat.id !== id))
+    } catch (err) {
+      console.error('❌ Gagal hapus kategori:', err)
+    }
   }
 
-  const onSubmit = (data: PostFormValues) => {
-    addPostMutation.mutate(data, {
-      onSuccess: () => router.push('/posts'),
-      onError: (error) => console.error('❌ Error:', error),
-    })
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const onSubmit = async (data: PostFormValues) => {
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('content', data.content)
+      if (data.category) formData.append('category', data.category)
+      if (data.image) formData.append('image', data.image)
+
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) throw new Error('Gagal menyimpan post')
+
+      const result = await res.json()
+      console.log('✅ Post dibuat:', result)
+      router.push('/posts')
+    } catch (err) {
+      console.error('❌ Error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const contentValue = watch('content')
+  console.log('📄 Content:', contentValue)
 
   return (
     <>
       <SiteHeader />
-      <Form {...form}>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-6 px-6 py-6 md:flex-row"
-        >
-          <div className="flex flex-1 flex-col gap-4">
-            <FormField
-              control={control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Judul</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Judul artikel"
-                      className="px-3 py-5 text-3xl font-bold"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Konten</FormLabel>
-                  <FormControl>
-                    <EditorClient
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="mt-4">
-              <Button type="submit" disabled={addPostMutation.isPending}>
-                {addPostMutation.isPending ? 'Menyimpan...' : 'Publikasikan'}
-              </Button>
-            </div>
-          </div>
-
-          <FormField
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-6 px-6 py-6 md:flex-row"
+      >
+        {/* Form Utama */}
+        <div className="flex flex-1 flex-col gap-4">
+          {/* Judul */}
+          <Controller
+            name="title"
             control={control}
-            name="category"
             render={({ field }) => (
-              <FormItem className="w-full space-y-2 rounded-md border p-4">
-                <FormLabel>Kategori</FormLabel>
-                <FormControl>
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between"
-                      >
-                        {field.value
-                          ? categories.find((cat) => cat.id === field.value)
-                              ?.name || 'Pilih kategori'
-                          : 'Pilih kategori'}
-                        <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Cari kategori..." />
-                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                        <CommandGroup>
-                          {isLoadingCategories ? (
-                            <div className="text-muted-foreground p-4 text-sm">
-                              Memuat kategori...
-                            </div>
-                          ) : (
-                            categories.map((cat) => (
-                              <CommandItem
-                                key={cat.id}
-                                value={cat.id}
-                                className="flex items-center justify-between"
-                              >
-                                <div
-                                  className="flex-1 cursor-pointer"
-                                  onClick={() => {
-                                    field.onChange(cat.id)
-                                    setOpen(false)
-                                  }}
-                                >
-                                  {cat.name}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {field.value === cat.id && (
-                                    <Check className="text-primary h-4 w-4" />
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteCategory(cat.id)
-                                    }}
-                                  >
-                                    <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
-                                  </button>
-                                </div>
-                              </CommandItem>
-                            ))
-                          )}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </FormControl>
-                <FormMessage />
+              <div>
+                <Input
+                  placeholder="Judul artikel"
+                  className={`px-3 py-5 text-3xl font-bold ${errors.title ? 'border-red-500 bg-red-500/5' : ''}`}
+                  {...field}
+                />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.title.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
 
+          {/* Konten */}
+          <Controller
+            name="content"
+            control={control}
+            render={({ field }) => (
+              <>
+                <EditorClient value={field.value} onChange={field.onChange} />
+                {errors.content && (
+                  <p className="text-sm text-red-500">
+                    {errors.content.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+
+          <div className="mt-4">
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Menyimpan...' : 'Publikasikan'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Controller
+            name="category"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2 rounded-md border p-4">
+                <Label>Kategori</Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {field.value
+                        ? categories.find((cat) => cat.id === field.value)
+                            ?.name || 'Pilih kategori'
+                        : 'Pilih kategori'}{' '}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari kategori..." />
+                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {categories.map((cat) => (
+                          <CommandItem
+                            key={cat.id}
+                            value={cat.id}
+                            className="flex items-center justify-between"
+                          >
+                            <div
+                              className="flex-1 cursor-pointer"
+                              onClick={() => {
+                                field.onChange(cat.id)
+                                setOpen(false)
+                              }}
+                            >
+                              {cat.name}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {field.value === cat.id && (
+                                <Check className="text-primary h-4 w-4" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  handleDeleteCategory(cat.id)
+                                }}
+                              >
+                                <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
+                              </button>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Tambah kategori baru */}
                 <div className="flex gap-2 pt-2">
                   <Input
                     placeholder="Kategori baru"
@@ -235,16 +281,69 @@ const AddPost = () => {
                     type="button"
                     variant="outline"
                     onClick={handleAddCategory}
-                    disabled={addCategoryMutation.isPending}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-              </FormItem>
+              </div>
             )}
           />
-        </form>
-      </Form>
+
+          <Controller
+            name="image"
+            control={control}
+            render={({ field: { onChange, value } }) => {
+              const previewUrl =
+                value instanceof File ? URL.createObjectURL(value) : null
+
+              return (
+                <div className="space-y-2 rounded-md border p-4">
+                  <Label>Feature Image</Label>
+
+                  {/* Kotak upload */}
+                  <label
+                    htmlFor="image-upload"
+                    className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
+                  >
+                    {previewUrl ? (
+                      <Image
+                        src={previewUrl}
+                        alt="Preview"
+                        fill
+                        className="h-full w-full rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-gray-500">
+                        <Upload className="mb-2 h-8 w-8" />
+                        <span className="text-sm">
+                          Klik untuk upload gambar
+                        </span>
+                      </div>
+                    )}
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 h-full w-full opacity-0"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        onChange(file || undefined)
+                      }}
+                    />
+                  </label>
+
+                  {/* Error message */}
+                  {typeof errors.image?.message === 'string' && (
+                    <p className="text-sm text-red-500">
+                      {errors.image.message}
+                    </p>
+                  )}
+                </div>
+              )
+            }}
+          />
+        </div>
+      </form>
     </>
   )
 }
