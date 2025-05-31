@@ -1,5 +1,4 @@
-// features/posts/hooks/usePosts.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Post } from '../post.type'
 
 export type PostFormValues = {
@@ -29,7 +28,7 @@ const addPost = async (data: PostFormValues): Promise<Post> => {
 
   if (!res.ok) {
     const err = await res.json().catch(() => null)
-    throw new Error(err?.message || 'Gagal menyimpan post')
+    throw new Error(err?.message || 'Gagal membuat post')
   }
 
   return (await res.json()) as Post

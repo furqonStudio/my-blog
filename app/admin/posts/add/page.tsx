@@ -16,41 +16,44 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Category } from '@/features/categories/category.type'
 import EditorClient from '@/features/post/components/EditorClient'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
+
+import {
+  useAddCategory,
+  useCategories,
+  useDeleteCategory,
+} from '@/features/categories/hooks/useCategories'
+import { useAddPost } from '@/features/post/hooks/usePosts'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
-  content: z.string().refine(
-    (val) => {
-      const stripped = val.replace(/<[^>]+>/g, '').trim()
-      return stripped.length > 0
-    },
-    {
+  content: z
+    .string()
+    .refine((val) => val.replace(/<[^>]+>/g, '').trim().length > 0, {
       message: 'Konten wajib diisi',
-    },
-  ),
+    }),
   category: z.string().optional(),
   image: z
     .any()
-    .refine((file) => file instanceof File, 'Gambar tidak valid')
+    .refine((file) => !file || file instanceof File, 'Gambar tidak valid')
     .optional(),
 })
 
 type PostFormValues = z.infer<typeof postSchema>
 
 const AddPost = () => {
+  const router = useRouter()
   const {
     control,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -61,100 +64,50 @@ const AddPost = () => {
       image: undefined,
     },
   })
-  const [categories, setCategories] = useState<Category[]>([])
-  console.log('🚀 ~ AddPost ~ categories:', categories)
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch('/api/categories')
-        if (!res.ok) throw new Error('Gagal mengambil kategori')
-
-        const data: Category[] = await res.json()
-        setCategories(data)
-      } catch (err) {
-        console.error('❌ Error mengambil kategori:', err)
-      }
-    }
-
-    fetchCategories()
-  }, [])
 
   const [newCategory, setNewCategory] = useState('')
   const [open, setOpen] = useState(false)
+  const { data: categories = [], isLoading, isError } = useCategories()
+  const addCategory = useAddCategory()
+  const deleteCategory = useDeleteCategory()
+  const addPost = useAddPost()
 
-  const handleAddCategory = async () => {
-    const trimmed = newCategory.trim()
-    if (!trimmed) return
-
-    // Cek duplikat
-    if (categories.some((c) => c.name === trimmed)) return
-
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
-      })
-
-      if (!res.ok) throw new Error('Gagal menambah kategori')
-
-      const newCat: Category = await res.json()
-      setCategories((prev) => [...prev, newCat])
-      setNewCategory('')
-    } catch (err) {
-      console.error('❌ Gagal tambah kategori:', err)
-    }
+  const onSubmit = (data: PostFormValues) => {
+    console.log('🚀 ~ onSubmit ~ data:', data)
+    addPost.mutate(data, {
+      onSuccess: () => {
+        toast.success('Post berhasil dipublikasikan!')
+        router.push('/posts')
+      },
+      onError: () => {
+        toast.error('Gagal menyimpan post.')
+      },
+    })
   }
 
-  const handleDeleteCategory = async (id: string) => {
-    const confirm = window.confirm(`Yakin ingin menghapus kategori ?`)
-    if (!confirm) return
-
-    try {
-      const res = await fetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) throw new Error('Gagal menghapus kategori')
-
-      setCategories((prev) => prev.filter((cat) => cat.id !== id))
-    } catch (err) {
-      console.error('❌ Gagal hapus kategori:', err)
-    }
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return
+    addCategory.mutate(newCategory, {
+      onSuccess: () => {
+        toast.success('Kategori berhasil ditambahkan.')
+        setNewCategory('')
+      },
+      onError: () => {
+        toast.error('Gagal menambahkan kategori.')
+      },
+    })
   }
 
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
-  const onSubmit = async (data: PostFormValues) => {
-    setLoading(true)
-    try {
-      const formData = new FormData()
-      formData.append('title', data.title)
-      formData.append('content', data.content)
-      if (data.category) formData.append('category', data.category)
-      if (data.image) formData.append('image', data.image)
-
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) throw new Error('Gagal menyimpan post')
-
-      const result = await res.json()
-      console.log('✅ Post dibuat:', result)
-      router.push('/posts')
-    } catch (err) {
-      console.error('❌ Error:', err)
-    } finally {
-      setLoading(false)
-    }
+  const handleDeleteCategory = (id: string) => {
+    deleteCategory.mutate(id, {
+      onSuccess: () => {
+        toast.success('Kategori berhasil dihapus.')
+      },
+      onError: () => {
+        toast.error('Gagal menghapus kategori.')
+      },
+    })
   }
-
-  const contentValue = watch('content')
-  console.log('📄 Content:', contentValue)
 
   return (
     <>
@@ -163,7 +116,7 @@ const AddPost = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="flex flex-col gap-6 px-6 py-6 md:flex-row"
       >
-        {/* Form Utama */}
+        {/* Kolom kiri */}
         <div className="flex flex-1 flex-col gap-4">
           {/* Judul */}
           <Controller
@@ -202,13 +155,15 @@ const AddPost = () => {
           />
 
           <div className="mt-4">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Menyimpan...' : 'Publikasikan'}
+            <Button type="submit" disabled={addPost.isPending}>
+              {addPost.isPending ? 'Menyimpan...' : 'Publikasikan'}
             </Button>
           </div>
         </div>
 
+        {/* Kolom kanan */}
         <div className="space-y-4">
+          {/* Kategori */}
           <Controller
             name="category"
             control={control}
@@ -225,7 +180,7 @@ const AddPost = () => {
                       {field.value
                         ? categories.find((cat) => cat.id === field.value)
                             ?.name || 'Pilih kategori'
-                        : 'Pilih kategori'}{' '}
+                        : 'Pilih kategori'}
                       <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -255,7 +210,7 @@ const AddPost = () => {
                               )}
                               <button
                                 type="button"
-                                onClick={async (e) => {
+                                onClick={(e) => {
                                   e.stopPropagation()
                                   handleDeleteCategory(cat.id)
                                 }}
@@ -270,7 +225,7 @@ const AddPost = () => {
                   </PopoverContent>
                 </Popover>
 
-                {/* Tambah kategori baru */}
+                {/* Tambah kategori */}
                 <div className="flex gap-2 pt-2">
                   <Input
                     placeholder="Kategori baru"
@@ -289,6 +244,7 @@ const AddPost = () => {
             )}
           />
 
+          {/* Gambar */}
           <Controller
             name="image"
             control={control}
@@ -299,8 +255,6 @@ const AddPost = () => {
               return (
                 <div className="space-y-2 rounded-md border p-4">
                   <Label>Feature Image</Label>
-
-                  {/* Kotak upload */}
                   <label
                     htmlFor="image-upload"
                     className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
@@ -332,7 +286,6 @@ const AddPost = () => {
                     />
                   </label>
 
-                  {/* Error message */}
                   {typeof errors.image?.message === 'string' && (
                     <p className="text-sm text-red-500">
                       {errors.image.message}
