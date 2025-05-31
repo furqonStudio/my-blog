@@ -2,21 +2,6 @@
 
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import EditorClient from '@/features/post/components/EditorClient'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { z } from 'zod'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import Image from 'next/image'
-import { ChevronDown, Upload } from 'lucide-react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -24,7 +9,21 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command'
-import { Check, Plus, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Category } from '@/features/post/categories/category.type'
+import EditorClient from '@/features/post/components/EditorClient'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, ChevronDown, Plus, Trash } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
@@ -61,25 +60,67 @@ const AddPost = () => {
       image: undefined,
     },
   })
+  const [categories, setCategories] = useState<Category[]>([])
+  console.log('🚀 ~ AddPost ~ categories:', categories)
 
-  const [categories, setCategories] = useState<string[]>([
-    'Teknologi',
-    'Lifestyle',
-    'Bisnis',
-  ]) // data awal
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        if (!res.ok) throw new Error('Gagal mengambil kategori')
+
+        const data: Category[] = await res.json()
+        setCategories(data)
+      } catch (err) {
+        console.error('❌ Error mengambil kategori:', err)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
   const [newCategory, setNewCategory] = useState('')
   const [open, setOpen] = useState(false)
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     const trimmed = newCategory.trim()
-    if (trimmed && !categories.includes(trimmed)) {
-      setCategories((prev) => [...prev, trimmed])
+    if (!trimmed) return
+
+    // Cek duplikat
+    if (categories.some((c) => c.name === trimmed)) return
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+
+      if (!res.ok) throw new Error('Gagal menambah kategori')
+
+      const newCat: Category = await res.json()
+      setCategories((prev) => [...prev, newCat])
       setNewCategory('')
+    } catch (err) {
+      console.error('❌ Gagal tambah kategori:', err)
     }
   }
 
-  const handleDeleteCategory = (cat: string) => {
-    setCategories((prev) => prev.filter((c) => c !== cat))
+  const handleDeleteCategory = async (id: string) => {
+    const confirm = window.confirm(`Yakin ingin menghapus kategori ?`)
+    if (!confirm) return
+
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) throw new Error('Gagal menghapus kategori')
+
+      setCategories((prev) => prev.filter((cat) => cat.id !== id))
+    } catch (err) {
+      console.error('❌ Gagal hapus kategori:', err)
+    }
   }
 
   const [loading, setLoading] = useState(false)
@@ -179,7 +220,10 @@ const AddPost = () => {
                     role="combobox"
                     className="w-full justify-between"
                   >
-                    {field.value ? field.value : 'Pilih kategori'}
+                    {field.value
+                      ? categories.find((cat) => cat.id === field.value)
+                          ?.name || 'Pilih kategori'
+                      : 'Pilih kategori'}{' '}
                     <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -190,26 +234,33 @@ const AddPost = () => {
                     <CommandGroup>
                       {categories.map((cat) => (
                         <CommandItem
-                          key={cat}
-                          value={cat}
-                          onSelect={() => {
-                            field.onChange(cat)
-                            setOpen(false)
-                          }}
+                          key={cat.id}
+                          value={cat.id}
                           className="flex items-center justify-between"
                         >
-                          <span>{cat}</span>
-                          {field.value === cat && (
-                            <Check className="text-primary h-4 w-4" />
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteCategory(cat)
+                          <div
+                            className="flex-1 cursor-pointer"
+                            onClick={() => {
+                              field.onChange(cat.id)
+                              setOpen(false)
                             }}
                           >
-                            <X className="text-muted-foreground ml-2 h-4 w-4 hover:text-red-500" />
-                          </button>
+                            {cat.name}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {field.value === cat.id && (
+                              <Check className="text-primary h-4 w-4" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                handleDeleteCategory(cat.id)
+                              }}
+                            >
+                              <Trash className="h-4 w-4 text-red-500 hover:text-red-700" />
+                            </button>
+                          </div>
                         </CommandItem>
                       ))}
                     </CommandGroup>
