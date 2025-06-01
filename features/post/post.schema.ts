@@ -26,9 +26,13 @@ export const postSchema = z.object({
 })
 
 export const draftSchema = z.object({
-  title: z.string().optional(),
+  title: z.string().default(() => `Draft Post ${Date.now()}`),
   content: z.string().optional(),
   categoryId: z.string().optional(),
-  imageUrl: z.any().optional(),
+  imageUrl: z.union([
+    z.string().url().optional(),
+    z.instanceof(File).optional(),
+    z.undefined(),
+  ]),
   status: z.nativeEnum(PostStatus).optional(),
 })

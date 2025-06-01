@@ -9,10 +9,11 @@ const fetchPosts = async (): Promise<Post[]> => {
 
 const addPost = async (data: PostFormValues): Promise<Post> => {
   const formData = new FormData()
-  formData.append('title', data.title)
-  formData.append('content', data.content)
-  formData.append('categoryId', data.categoryId)
-  formData.append('imageUrl', data.imageUrl)
+  if (data.title) formData.append('title', data.title)
+  if (data.content) formData.append('content', data.content)
+  if (data.categoryId) formData.append('categoryId', data.categoryId)
+  if (data.imageUrl) formData.append('imageUrl', data.imageUrl)
+
   formData.append('status', data.status)
 
   const res = await fetch('/api/posts', {

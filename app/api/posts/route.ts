@@ -5,6 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import { postSchema, draftSchema } from '@/features/post/post.schema'
 import { PostStatus, Prisma } from '@/app/generated/prisma'
+import { z } from 'zod'
 
 export async function GET() {
   const posts = await prisma.post.findMany({
@@ -27,23 +28,30 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData()
 
+    const status = formData.get('status') as PostStatus | undefined
+    let title = formData.get('title')?.toString().trim()
+
+    if (status === PostStatus.DRAFT && (!title || title === '')) {
+      title = `Draft Post ${Math.floor(Math.random() * 10000)}`
+    }
+
     const rawData = {
-      title: formData.get('title'),
+      title,
       content: formData.get('content'),
       categoryId: formData.get('categoryId'),
       imageUrl: formData.get('imageUrl'),
-      status: formData.get('status'),
+      status,
     }
 
-    const status = rawData.status as PostStatus | undefined
-
-    const parseResult =
-      status === PostStatus.DRAFT
-        ? draftSchema.safeParse(rawData)
-        : postSchema.safeParse(rawData)
-
-    if (!parseResult.success) {
-      const errors = parseResult.error.flatten().fieldErrors
+    let validatedData
+    try {
+      validatedData =
+        status === PostStatus.DRAFT
+          ? draftSchema.parse(rawData)
+          : postSchema.parse(rawData)
+    } catch (err) {
+      const zodError = err as z.ZodError
+      const errors = zodError.flatten().fieldErrors
       return NextResponse.json(
         { error: 'Validasi gagal', details: errors },
         { status: 400 },
@@ -51,12 +59,12 @@ export async function POST(req: Request) {
     }
 
     const {
-      title,
+      title: validatedTitle,
       content,
       categoryId,
       imageUrl,
       status: validatedStatus,
-    } = parseResult.data
+    } = validatedData
 
     let imagePath: string | null = null
     if (
@@ -79,27 +87,24 @@ export async function POST(req: Request) {
       imagePath = imageUrl && typeof imageUrl === 'string' ? imageUrl : null
     }
 
-    const slug = title
-      ? title
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
-      : null
+    const slug =
+      validatedTitle
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '') || `untitled-${Date.now()}`
 
     const publishedAt =
       validatedStatus === PostStatus.PUBLISHED ? new Date() : null
 
     const author = 'Furqon'
-    const slugValue = slug ?? `untitled-${Date.now()}`
 
-    // Pastikan properti wajib tidak undefined dengan tanda '!'
     const dataForCreate: Prisma.PostCreateInput = {
-      title: title!, // sudah pasti ada dari validasi Zod
-      slug: slugValue,
-      content: content!, // sudah pasti ada
+      title: validatedTitle,
+      slug,
+      content: content!,
       author,
       status: validatedStatus,
-      imageUrl: imagePath ?? '', // fallback ke string kosong jika null
+      imageUrl: imagePath ?? '',
       publishedAt: publishedAt ?? undefined,
       category: categoryId
         ? { connect: { id: categoryId as string } }
