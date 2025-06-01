@@ -15,8 +15,30 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Post } from '../post.type'
 import { usePosts } from '../hooks/usePosts'
 import { Skeleton } from '@/components/ui/skeleton'
+import Image from 'next/image'
 
 const columns: ColumnDef<Post>[] = [
+  {
+    accessorKey: 'image',
+    header: 'Thumbnail',
+    cell: ({ row }) => {
+      const rawUrl = (row.getValue('image') as string | undefined) ?? ''
+      const isLocal = rawUrl.startsWith('/')
+      const baseLocalUrl = 'http://localhost:3000'
+      const imageUrl = isLocal ? `${baseLocalUrl}${rawUrl}` : rawUrl
+
+      return (
+        <div className="bg-muted relative aspect-video w-full max-w-[96px] overflow-hidden rounded-md">
+          <Image
+            src={rawUrl ? imageUrl : '/placeholder.png'}
+            alt="Thumbnail"
+            fill
+            className="object-cover"
+          />
+        </div>
+      )
+    },
+  },
   {
     accessorKey: 'title',
     header: 'Title',
