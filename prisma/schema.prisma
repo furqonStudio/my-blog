@@ -11,9 +11,9 @@ datasource db {
 model Post {
   id          Int        @id @default(autoincrement())
   title       String
-  slug        String     @unique
-  imageUrl    String
-  content     String
+  slug        String?    @unique
+  imageUrl    String?
+  content     String?
   status      PostStatus @default(DRAFT)
   publishedAt DateTime?
   categoryId  String?

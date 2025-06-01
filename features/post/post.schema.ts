@@ -1,6 +1,15 @@
 import { PostStatus } from '@/app/generated/prisma'
 import { z } from 'zod'
 
+const imageFileValidator = z
+  .custom<File>()
+  .refine(
+    (file) => file instanceof File,
+    'Gambar tidak valid atau belum dipilih',
+  )
+  .refine((file) => file.type.startsWith('image/'), 'File harus berupa gambar')
+  .refine((file) => file.size <= 2 * 1024 * 1024, 'Ukuran gambar maksimal 2MB')
+
 export const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
   content: z
@@ -10,28 +19,16 @@ export const postSchema = z.object({
       'Konten wajib diisi',
     ),
   categoryId: z.string().min(1, 'Kategori wajib dipilih'),
-  imageUrl: z
-    .custom<File>()
-    .refine(
-      (file) => file instanceof File,
-      'Gambar tidak valid atau belum dipilih',
-    ),
-  status: z.nativeEnum(PostStatus),
+  imageUrl: imageFileValidator,
+  status: z.nativeEnum(PostStatus, {
+    errorMap: () => ({ message: 'Status tidak valid' }),
+  }),
 })
 
 export const draftSchema = z.object({
   title: z.string().optional(),
-  content: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val.replace(/<[^>]+>/g, '').trim().length > 0,
-      'Konten tidak boleh hanya tag kosong',
-    ),
+  content: z.string().optional(),
   categoryId: z.string().optional(),
-  imageUrl: z
-    .any()
-    .optional()
-    .refine((file) => !file || file instanceof File, 'Gambar tidak valid'),
+  imageUrl: z.any().optional(),
   status: z.nativeEnum(PostStatus).optional(),
 })
