@@ -5,7 +5,6 @@ import fs from 'fs'
 import path from 'path'
 import { postSchema, draftSchema } from '@/features/post/post.schema'
 import { PostStatus, Prisma } from '@/app/generated/prisma'
-import { z } from 'zod'
 
 export async function GET() {
   const posts = await prisma.post.findMany({
@@ -28,9 +27,11 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData()
 
+    // Ambil status dari formData
     const status = formData.get('status') as PostStatus | undefined
     let title = formData.get('title')?.toString().trim()
 
+    // Jika draft dan title kosong, buat default title
     if (status === PostStatus.DRAFT && (!title || title === '')) {
       title = `Draft Post ${Math.floor(Math.random() * 10000)}`
     }
@@ -43,15 +44,18 @@ export async function POST(req: Request) {
       status,
     }
 
-    let validatedData
-    try {
-      validatedData =
-        status === PostStatus.DRAFT
-          ? draftSchema.parse(rawData)
-          : postSchema.parse(rawData)
-    } catch (err) {
-      const zodError = err as z.ZodError
-      const errors = zodError.flatten().fieldErrors
+    // Validasi data pakai safeParse supaya simple
+    const parseResult =
+      status === PostStatus.DRAFT
+        ? draftSchema.safeParse(rawData)
+        : postSchema.safeParse(rawData)
+
+    if (!parseResult.success) {
+      // Buat error response sederhana
+      const errors = parseResult.error.errors.map((e) => ({
+        path: e.path.join('.'),
+        message: e.message,
+      }))
       return NextResponse.json(
         { error: 'Validasi gagal', details: errors },
         { status: 400 },
@@ -59,12 +63,16 @@ export async function POST(req: Request) {
     }
 
     const {
-      title: validatedTitle,
+      title: validatedTitleRaw,
       content,
       categoryId,
       imageUrl,
       status: validatedStatus,
-    } = validatedData
+    } = parseResult.data
+
+    // Pastikan title tidak undefined
+    const validatedTitle =
+      validatedTitleRaw || `Draft Post ${Math.floor(Math.random() * 10000)}`
 
     let imagePath: string | null = null
     if (
@@ -101,7 +109,7 @@ export async function POST(req: Request) {
     const dataForCreate: Prisma.PostCreateInput = {
       title: validatedTitle,
       slug,
-      content: content!,
+      content: content ?? '',
       author,
       status: validatedStatus,
       imageUrl: imagePath ?? '',

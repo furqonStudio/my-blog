@@ -12,7 +12,12 @@ const addPost = async (data: PostFormValues): Promise<Post> => {
   if (data.title) formData.append('title', data.title)
   if (data.content) formData.append('content', data.content)
   if (data.categoryId) formData.append('categoryId', data.categoryId)
-  if (data.imageUrl) formData.append('imageUrl', data.imageUrl)
+
+  if (data.imageUrl) {
+    if (typeof data.imageUrl === 'string' || data.imageUrl instanceof File) {
+      formData.append('imageUrl', data.imageUrl)
+    }
+  }
 
   formData.append('status', data.status)
 

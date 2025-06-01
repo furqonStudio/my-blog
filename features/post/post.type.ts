@@ -16,7 +16,7 @@ export type Post = {
 export type PostFormValues = {
   title: string
   content?: string
-  imageUrl?: string
+  imageUrl?: File | string
   categoryId?: string
   status: PostStatus
 }

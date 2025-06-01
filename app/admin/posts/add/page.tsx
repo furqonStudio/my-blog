@@ -17,13 +17,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import EditorClient from '@/features/post/components/EditorClient'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
 import {
   useAddCategory,
@@ -32,10 +32,15 @@ import {
 } from '@/features/categories/hooks/useCategories'
 import { useAddPost } from '@/features/post/hooks/usePosts'
 import { PostFormValues } from '@/features/post/post.type'
-import { postSchema } from '@/features/post/post.schema'
+import { draftSchema, postSchema } from '@/features/post/post.schema'
+import { NextResponse } from 'next/server'
 
 const AddPost = () => {
   const router = useRouter()
+  const [submitStatus, setSubmitStatus] = useState<'PUBLISHED' | 'DRAFT'>(
+    'PUBLISHED',
+  )
+
   const {
     control,
     handleSubmit,
@@ -43,7 +48,6 @@ const AddPost = () => {
     watch,
     formState: { errors },
   } = useForm<PostFormValues>({
-    resolver: zodResolver(postSchema),
     defaultValues: {
       title: '',
       content: '',
@@ -53,14 +57,7 @@ const AddPost = () => {
     },
   })
 
-  const [newCategory, setNewCategory] = useState('')
-  const [open, setOpen] = useState(false)
-  const { data: categories = [] } = useCategories()
-  const addCategory = useAddCategory()
-  const deleteCategory = useDeleteCategory()
   const addPost = useAddPost()
-
-  // Untuk preview image URL & revoke
   const imageFile = watch('imageUrl')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -74,35 +71,64 @@ const AddPost = () => {
     }
   }, [imageFile])
 
-  const onSubmit = (data: PostFormValues) => {
-    console.log('🚀 ~ onSubmit ~ data:', data)
-    addPost.mutate(data, {
-      onSuccess: () => {
-        toast.success(
-          data.status === 'DRAFT'
-            ? 'Draf berhasil disimpan!'
-            : 'Post berhasil dipublikasikan!',
+  const [newCategory, setNewCategory] = useState('')
+  const [open, setOpen] = useState(false)
+  const { data: categories = [] } = useCategories()
+  const addCategory = useAddCategory()
+  const deleteCategory = useDeleteCategory()
+
+  const onSubmit = async (data: PostFormValues) => {
+    try {
+      const schema = submitStatus === 'DRAFT' ? draftSchema : postSchema
+      schema.parse(data)
+
+      data.status = submitStatus
+
+      addPost.mutate(data, {
+        onSuccess: () => {
+          toast.success(
+            submitStatus === 'DRAFT'
+              ? 'Draf berhasil disimpan!'
+              : 'Post berhasil dipublikasikan!',
+          )
+          // router.push('/posts')
+        },
+        onError: (err) => {
+          console.log('🚀 ~ onSubmit ~ err:', err)
+          toast.error('Gagal menyimpan post.')
+        },
+      })
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const errors = err.errors.reduce(
+          (acc, e) => {
+            const key = e.path.join('.') || 'root'
+            if (!acc[key]) acc[key] = []
+            acc[key].push(e.message)
+            return acc
+          },
+          {} as Record<string, string[]>,
         )
-        router.push('/posts')
-      },
-      onError: (e) => {
-        console.log('🚀 ~ onSubmit ~ e:', e)
-        toast.error('Gagal menyimpan post.')
-      },
-    })
+        console.log('🚀 ~ onSubmit ~ errors:', errors)
+        return NextResponse.json(
+          { error: 'Validasi gagal', details: errors },
+          { status: 400 },
+        )
+      }
+      // error lain
+      return NextResponse.json({ error: 'Gagal membuat post' }, { status: 500 })
+    }
   }
 
-  // Fungsi submit untuk Publish
   const submitPublish = () => {
-    setValue('status', 'PUBLISHED', { shouldValidate: true, shouldDirty: true })
+    setSubmitStatus('PUBLISHED')
+    setValue('status', 'PUBLISHED', { shouldValidate: false })
     handleSubmit(onSubmit)()
   }
 
-  // Fungsi submit untuk Simpan Draft
   const submitDraft = () => {
-    setValue('status', 'DRAFT', { shouldValidate: true, shouldDirty: true })
-    console.log('TEST')
-
+    setSubmitStatus('DRAFT')
+    setValue('status', 'DRAFT', { shouldValidate: false })
     handleSubmit(onSubmit)()
   }
 
@@ -167,7 +193,10 @@ const AddPost = () => {
             control={control}
             render={({ field }) => (
               <>
-                <EditorClient value={field.value} onChange={field.onChange} />
+                <EditorClient
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                />
                 {errors.content && (
                   <p className="text-sm text-red-500">
                     {errors.content.message}
