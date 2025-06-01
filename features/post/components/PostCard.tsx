@@ -65,7 +65,9 @@ export const PostCard = ({ post }: PostCardProps) => {
             Oleh {author || 'Anonim'} &bull; {formatDate(publishedAt)}
           </p>
           {category && (
-            <span className="text-xs text-gray-400">Kategori: {category}</span>
+            <span className="text-xs text-gray-400">
+              Kategori: {category.name}
+            </span>
           )}
         </CardFooter>
       </Card>

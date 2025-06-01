@@ -24,7 +24,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { z } from 'zod'
 
 import {
   useAddCategory,
@@ -33,19 +32,7 @@ import {
 } from '@/features/categories/hooks/useCategories'
 import { useAddPost } from '@/features/post/hooks/usePosts'
 import { PostFormValues } from '@/features/post/post.type'
-
-const postSchema = z.object({
-  title: z.string().min(1, 'Judul wajib diisi'),
-  content: z
-    .string()
-    .refine((val) => val.replace(/<[^>]+>/g, '').trim().length > 0, {
-      message: 'Konten wajib diisi',
-    }),
-  categoryId: z.string().min(1, 'Kategori wajib dipilih'),
-  image: z.instanceof(File, {
-    message: 'Gambar tidak valid atau belum dipilih',
-  }),
-})
+import { postSchema } from '@/features/post/post.schema'
 
 const AddPost = () => {
   const router = useRouter()
