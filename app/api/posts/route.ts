@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { v4 as uuid } from 'uuid'
 import fs from 'fs'
 import path from 'path'
+import { PostStatus } from '@/app/generated/prisma'
 
 export async function GET() {
   const posts = await prisma.post.findMany({
@@ -10,11 +11,12 @@ export async function GET() {
       id: true,
       title: true,
       slug: true,
-      image: true,
+      imageUrl: true,
       publishedAt: true,
       content: true,
       author: true,
       category: true,
+      status: true,
     },
   })
   return NextResponse.json(posts)
@@ -24,15 +26,26 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData()
 
-    const title = formData.get('title') as string
-    const content = formData.get('content') as string
-    const categoryId = formData.get('categoryId') as string // ubah jadi categoryId
-    const publishedAt = new Date()
-    const author = 'Furqon'
-    const file = formData.get('image') as File | null
+    const title = formData.get('title')
+    const content = formData.get('content')
+    const categoryId = formData.get('categoryId')
+    const file = formData.get('imageUrl')
+    const status = formData.get('status')
 
-    if (!title || !content || !categoryId || !file) {
-      return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
+    if (typeof status !== 'string') {
+      return NextResponse.json({ error: 'Status tidak valid' }, { status: 400 })
+    }
+
+    if (
+      typeof title !== 'string' ||
+      typeof content !== 'string' ||
+      typeof categoryId !== 'string' ||
+      !(file instanceof File)
+    ) {
+      return NextResponse.json(
+        { error: 'Data tidak lengkap atau tidak valid' },
+        { status: 400 },
+      )
     }
 
     if (!file.type.startsWith('image/')) {
@@ -49,29 +62,25 @@ export async function POST(req: Request) {
       )
     }
 
-    let imagePath: string | null = null
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const fileName = `${uuid()}.${ext}`
+    const uploadDir = path.join(process.cwd(), 'public/uploads')
 
-    if (file && file.name) {
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const ext = file.name.split('.').pop()
-      const fileName = `${uuid()}.${ext}`
-      const uploadDir = path.join(process.cwd(), 'public/uploads')
-      const filePath = path.join(uploadDir, fileName)
+    fs.mkdirSync(uploadDir, { recursive: true })
+    const filePath = path.join(uploadDir, fileName)
+    fs.writeFileSync(filePath, buffer)
 
-      fs.mkdirSync(uploadDir, { recursive: true })
-      fs.writeFileSync(filePath, buffer)
-
-      imagePath = `/uploads/${fileName}`
-    }
+    const imagePath = `/uploads/${fileName}`
 
     const slug = title
       .toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
 
-    // Tidak perlu mencari/membuat category baru
-    // Langsung connect dengan category yang sudah ada pakai categoryId
+    const publishedAt = new Date()
+    const author = 'Furqon'
 
     const newPost = await prisma.post.create({
       data: {
@@ -83,7 +92,8 @@ export async function POST(req: Request) {
         },
         publishedAt,
         author,
-        image: imagePath ?? '',
+        imageUrl: imagePath,
+        status: status as PostStatus,
       },
     })
 

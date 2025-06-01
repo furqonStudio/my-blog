@@ -11,6 +11,7 @@ const postData = [
     content: 'Ini adalah konten post pertama.',
     categoryName: 'Teknologi',
     author: 'Furqon',
+    status: 'PUBLISHED',
   },
   {
     title: 'Post Kedua',
@@ -20,6 +21,7 @@ const postData = [
     content: 'Konten post kedua di sini.',
     categoryName: 'Pemrograman',
     author: 'Furqon',
+    status: 'DRAFT',
   },
   {
     title: 'Post Ketiga',
@@ -29,14 +31,14 @@ const postData = [
     content: 'Halo, ini adalah post ketiga.',
     categoryName: 'Umum',
     author: 'Furqon',
+    status: 'PUBLISHED',
   },
-]
+] as const
 
 async function main() {
   console.log('🚀 Menjalankan seed...')
 
   for (const post of postData) {
-    // Pastikan kategori ada / buat baru jika belum ada
     const category = await prisma.category.upsert({
       where: { name: post.categoryName },
       update: {},
@@ -51,6 +53,7 @@ async function main() {
         publishedAt: post.publishedAt,
         content: post.content,
         author: post.author,
+        status: post.status,
         category: {
           connect: { id: category.id },
         },

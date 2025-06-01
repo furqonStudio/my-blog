@@ -21,7 +21,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -39,6 +39,8 @@ const AddPost = () => {
   const {
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema),
@@ -47,29 +49,61 @@ const AddPost = () => {
       content: '',
       categoryId: '',
       imageUrl: undefined,
+      status: 'PUBLISHED',
     },
   })
 
   const [newCategory, setNewCategory] = useState('')
   const [open, setOpen] = useState(false)
-  const { data: categories = [], isLoading, isError } = useCategories()
+  const { data: categories = [] } = useCategories()
   const addCategory = useAddCategory()
   const deleteCategory = useDeleteCategory()
   const addPost = useAddPost()
+
+  // Untuk preview image URL & revoke
+  const imageFile = watch('imageUrl')
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (imageFile instanceof File) {
+      const url = URL.createObjectURL(imageFile)
+      setPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setPreviewUrl(null)
+    }
+  }, [imageFile])
 
   const onSubmit = (data: PostFormValues) => {
     console.log('🚀 ~ onSubmit ~ data:', data)
     addPost.mutate(data, {
       onSuccess: () => {
-        toast.success('Post berhasil dipublikasikan!')
-        // router.push('/posts')
+        toast.success(
+          data.status === 'DRAFT'
+            ? 'Draf berhasil disimpan!'
+            : 'Post berhasil dipublikasikan!',
+        )
+        router.push('/posts')
       },
-      onError: (error) => {
-        console.error('Add post failed:', error)
-
+      onError: (e) => {
+        console.log('🚀 ~ onSubmit ~ e:', e)
         toast.error('Gagal menyimpan post.')
       },
     })
+  }
+
+  // Fungsi submit untuk Publish
+  const submitPublish = () => {
+    setValue('status', 'PUBLISHED', { shouldValidate: true, shouldDirty: true })
+    handleSubmit(onSubmit)()
+  }
+
+  // Fungsi submit untuk Simpan Draft
+  const submitDraft = () => {
+    setValue('status', 'DRAFT', { shouldValidate: true, shouldDirty: true })
+    console.log('TEST')
+
+    handleSubmit(onSubmit)()
   }
 
   const handleAddCategory = () => {
@@ -100,7 +134,7 @@ const AddPost = () => {
     <>
       <SiteHeader />
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(e) => e.preventDefault()}
         className="flex flex-col gap-6 px-6 py-6 md:flex-row"
       >
         {/* Kolom kiri */}
@@ -113,7 +147,9 @@ const AddPost = () => {
               <div>
                 <Input
                   placeholder="Judul artikel"
-                  className={`px-3 py-5 text-3xl font-bold ${errors.title ? 'border-red-500 bg-red-500/5' : ''}`}
+                  className={`px-3 py-5 text-3xl font-bold ${
+                    errors.title ? 'border-red-500 bg-red-500/5' : ''
+                  }`}
                   {...field}
                 />
                 {errors.title && (
@@ -141,9 +177,21 @@ const AddPost = () => {
             )}
           />
 
-          <div className="mt-4">
-            <Button type="submit" disabled={addPost.isPending}>
+          <div className="mt-4 flex gap-2">
+            <Button
+              type="button"
+              disabled={addPost.isPending}
+              onClick={submitPublish}
+            >
               {addPost.isPending ? 'Menyimpan...' : 'Publikasikan'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={addPost.isPending}
+              onClick={submitDraft}
+            >
+              Simpan sebagai Draf
             </Button>
           </div>
         </div>
@@ -235,52 +283,39 @@ const AddPost = () => {
           <Controller
             name="imageUrl"
             control={control}
-            render={({ field: { onChange, value } }) => {
-              const previewUrl =
-                value instanceof File ? URL.createObjectURL(value) : null
-
-              return (
-                <div className="space-y-2 rounded-md border p-4">
-                  <Label>Feature Image</Label>
-                  <label
-                    htmlFor="image-upload"
-                    className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
-                  >
-                    {previewUrl ? (
-                      <Image
-                        src={previewUrl}
-                        alt="Preview"
-                        fill
-                        className="h-full w-full rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-gray-500">
-                        <Upload className="mb-2 h-8 w-8" />
-                        <span className="text-sm">
-                          Klik untuk upload gambar
-                        </span>
-                      </div>
-                    )}
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 h-full w-full opacity-0"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        onChange(file || undefined)
-                      }}
+            render={({ field: { onChange } }) => (
+              <div className="space-y-2 rounded-md border p-4">
+                <Label>Feature Image</Label>
+                <label
+                  htmlFor="image-upload"
+                  className="group relative flex aspect-video w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 transition hover:border-gray-400"
+                >
+                  {previewUrl ? (
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      fill
+                      className="h-full w-full rounded-md object-cover"
                     />
-                  </label>
-
-                  {typeof errors.imageUrl?.message === 'string' && (
-                    <p className="text-sm text-red-500">
-                      {errors.imageUrl.message}
-                    </p>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-gray-500">
+                      <Upload className="mb-2 h-8 w-8" />
+                      <span className="text-sm">Klik untuk upload gambar</span>
+                    </div>
                   )}
-                </div>
-              )
-            }}
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 h-full w-full opacity-0"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      onChange(file)
+                    }}
+                  />
+                </label>
+              </div>
+            )}
           />
         </div>
       </form>

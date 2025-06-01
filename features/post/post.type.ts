@@ -1,3 +1,4 @@
+import { PostStatus } from '@/app/generated/prisma'
 import { Category } from '@/features/categories/category.type'
 
 export type Post = {
@@ -9,6 +10,7 @@ export type Post = {
   content: string
   category: Category
   author: string
+  status: PostStatus
 }
 
 export type PostFormValues = {
@@ -16,4 +18,5 @@ export type PostFormValues = {
   content: string
   categoryId: string
   imageUrl: File
+  status: PostStatus
 }

@@ -19,10 +19,10 @@ import Image from 'next/image'
 
 const columns: ColumnDef<Post>[] = [
   {
-    accessorKey: 'image',
+    accessorKey: 'imageUrl',
     header: 'Thumbnail',
     cell: ({ row }) => {
-      const rawUrl = (row.getValue('image') as string | undefined) ?? ''
+      const rawUrl = (row.getValue('imageUrl') as string | undefined) ?? ''
       const isLocal = rawUrl.startsWith('/')
       const baseLocalUrl = 'http://localhost:3000'
       const imageUrl = isLocal ? `${baseLocalUrl}${rawUrl}` : rawUrl

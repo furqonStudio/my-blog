@@ -9,15 +9,21 @@ datasource db {
 }
 
 model Post {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   title       String
-  slug        String    @unique
+  slug        String     @unique
   imageUrl    String
-  publishedAt DateTime  @default(now())
   content     String
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
   categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
+  category    Category?  @relation(fields: [categoryId], references: [id])
   author      String?
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
 }
 
 model Category {
