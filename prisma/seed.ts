@@ -1,37 +1,33 @@
 import { PrismaClient } from '@/app/generated/prisma'
-import { Post } from '@/features/post/post.type'
 
 const prisma = new PrismaClient()
 
-const postData: Post[] = [
+const postData = [
   {
-    id: 1,
     title: 'Post Pertama',
     slug: 'post-pertama',
-    image: 'https://picsum.photos/600/400?random=1',
+    imageUrl: 'https://picsum.photos/600/400?random=1',
     publishedAt: new Date(),
     content: 'Ini adalah konten post pertama.',
-    category: 'Teknologi',
+    categoryName: 'Teknologi',
     author: 'Furqon',
   },
   {
-    id: 2,
     title: 'Post Kedua',
     slug: 'post-kedua',
-    image: 'https://picsum.photos/600/400?random=2',
+    imageUrl: 'https://picsum.photos/600/400?random=2',
     publishedAt: new Date(),
     content: 'Konten post kedua di sini.',
-    category: 'Pemrograman',
+    categoryName: 'Pemrograman',
     author: 'Furqon',
   },
   {
-    id: 3,
     title: 'Post Ketiga',
     slug: 'post-ketiga',
-    image: 'https://picsum.photos/600/400?random=3',
+    imageUrl: 'https://picsum.photos/600/400?random=3',
     publishedAt: new Date(),
     content: 'Halo, ini adalah post ketiga.',
-    category: 'Umum',
+    categoryName: 'Umum',
     author: 'Furqon',
   },
 ]
@@ -40,19 +36,18 @@ async function main() {
   console.log('🚀 Menjalankan seed...')
 
   for (const post of postData) {
-    // Pastikan kategori ada
+    // Pastikan kategori ada / buat baru jika belum ada
     const category = await prisma.category.upsert({
-      where: { name: post.category ?? 'Tanpa Kategori' },
+      where: { name: post.categoryName },
       update: {},
-      create: { name: post.category ?? 'Tanpa Kategori' },
+      create: { name: post.categoryName },
     })
 
-    // Transformasi ke bentuk PostCreateInput
     await prisma.post.create({
       data: {
         title: post.title,
         slug: post.slug,
-        image: post.image,
+        imageUrl: post.imageUrl,
         publishedAt: post.publishedAt,
         content: post.content,
         author: post.author,

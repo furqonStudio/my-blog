@@ -28,7 +28,7 @@ interface PostCardProps {
 }
 
 export const PostCard = ({ post }: PostCardProps) => {
-  const { title, slug, image, publishedAt, content, category, author } = post
+  const { title, slug, imageUrl, publishedAt, content, category, author } = post
 
   const plainTextContent = stripHtmlTags(content)
   const truncatedContent =
@@ -41,7 +41,7 @@ export const PostCard = ({ post }: PostCardProps) => {
       <Card className="w-[350px] pt-0">
         <div className="relative h-48 overflow-hidden rounded-t-md">
           <Image
-            src={image}
+            src={imageUrl}
             alt={`Gambar Cover untuk ${title}`}
             className="aspect-video object-cover"
             fill

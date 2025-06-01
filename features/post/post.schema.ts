@@ -8,7 +8,7 @@ export const postSchema = z.object({
       message: 'Konten wajib diisi',
     }),
   categoryId: z.string().min(1, 'Kategori wajib dipilih'),
-  image: z.instanceof(File, {
+  imageUrl: z.instanceof(File, {
     message: 'Gambar tidak valid atau belum dipilih',
   }),
 })
@@ -22,7 +22,7 @@ export const draftSchema = z.object({
       message: 'Konten tidak boleh hanya tag kosong',
     }),
   categoryId: z.string().optional(),
-  image: z
+  imageUrl: z
     .any()
     .optional()
     .refine((file) => !file || file instanceof File, 'Gambar tidak valid'),

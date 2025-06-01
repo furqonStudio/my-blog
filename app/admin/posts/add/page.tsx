@@ -46,7 +46,7 @@ const AddPost = () => {
       title: '',
       content: '',
       categoryId: '',
-      image: undefined,
+      imageUrl: undefined,
     },
   })
 
@@ -233,7 +233,7 @@ const AddPost = () => {
 
           {/* Gambar */}
           <Controller
-            name="image"
+            name="imageUrl"
             control={control}
             render={({ field: { onChange, value } }) => {
               const previewUrl =
@@ -273,9 +273,9 @@ const AddPost = () => {
                     />
                   </label>
 
-                  {typeof errors.image?.message === 'string' && (
+                  {typeof errors.imageUrl?.message === 'string' && (
                     <p className="text-sm text-red-500">
-                      {errors.image.message}
+                      {errors.imageUrl.message}
                     </p>
                   )}
                 </div>

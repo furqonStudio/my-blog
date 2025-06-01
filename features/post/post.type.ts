@@ -4,7 +4,7 @@ export type Post = {
   id: number
   title: string
   slug: string
-  image: string
+  imageUrl: string
   publishedAt: Date
   content: string
   category: Category
@@ -15,5 +15,5 @@ export type PostFormValues = {
   title: string
   content: string
   categoryId: string
-  image: File
+  imageUrl: File
 }

@@ -12,7 +12,7 @@ model Post {
   id          Int       @id @default(autoincrement())
   title       String
   slug        String    @unique
-  image       String
+  imageUrl    String
   publishedAt DateTime  @default(now())
   content     String
   categoryId  String?
