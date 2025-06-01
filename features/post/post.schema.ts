@@ -1,50 +1,62 @@
-import { PostStatus } from '@/app/generated/prisma'
 import { z } from 'zod'
 
-const imageFileValidator = z
-  .custom<File | undefined>()
-  .refine(
-    (file) => file !== undefined && file !== null && file instanceof File,
-    'Gambar tidak valid atau belum dipilih',
-  )
-  .refine(
-    (file) => file && file.type.startsWith('image/'),
-    'File harus berupa gambar',
-  )
-  .refine(
-    (file) => file && file.size <= 2 * 1024 * 1024,
-    'Ukuran gambar maksimal 2MB',
-  )
+export const createPostSchema = z
+  .object({
+    title: z.string().optional(),
+    content: z.string().optional(),
+    imageUrl: z.string().url().optional(),
+    categoryId: z.string().cuid().optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED']),
+  })
+  .superRefine((data, ctx) => {
+    const { title, content, imageUrl, categoryId, status } = data
 
-const imageFileOrUrlValidator = z.union([
-  imageFileValidator,
-  z.string().url(),
-  z.undefined(),
-])
+    // Semua field kosong checker
+    const allEmpty =
+      (!title || title.trim() === '') &&
+      (!content || content.trim() === '') &&
+      (!imageUrl || imageUrl.trim() === '') &&
+      (!categoryId || categoryId.trim() === '')
 
-export const postSchema = z.object({
-  title: z.string().min(1, 'Judul wajib diisi'),
-  content: z
-    .string()
-    .refine(
-      (val) => val.replace(/<[^>]+>/g, '').trim().length > 0,
-      'Konten wajib diisi',
-    ),
-  categoryId: z.string().min(1, 'Kategori wajib dipilih'),
-  imageUrl: imageFileOrUrlValidator,
-  status: z.nativeEnum(PostStatus, {
-    errorMap: () => ({ message: 'Status tidak valid' }),
-  }),
-})
+    if (status === 'DRAFT') {
+      if (allEmpty) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Minimal satu field harus diisi untuk draft',
+          path: [], // error global
+        })
+      }
+    }
 
-export const draftSchema = z.object({
-  title: z.string().optional(),
-  content: z.string().optional(),
-  categoryId: z.string().optional(),
-  imageUrl: z.union([
-    imageFileValidator.optional(),
-    z.string().url().optional(),
-    z.undefined(),
-  ]),
-  status: z.nativeEnum(PostStatus).optional().default(PostStatus.DRAFT),
-})
+    if (status === 'PUBLISHED') {
+      // Semua wajib
+      if (!title || title.trim() === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['title'],
+          message: 'Judul wajib diisi saat publish',
+        })
+      }
+      if (!content || content.trim() === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['content'],
+          message: 'Konten wajib diisi saat publish',
+        })
+      }
+      if (!imageUrl || imageUrl.trim() === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['imageUrl'],
+          message: 'Image URL wajib diisi saat publish',
+        })
+      }
+      if (!categoryId || categoryId.trim() === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['categoryId'],
+          message: 'Kategori wajib diisi saat publish',
+        })
+      }
+    }
+  })
