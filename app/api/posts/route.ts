@@ -26,12 +26,12 @@ export async function POST(req: Request) {
 
     const title = formData.get('title') as string
     const content = formData.get('content') as string
-    const category = formData.get('category') as string
+    const categoryId = formData.get('categoryId') as string // ubah jadi categoryId
     const publishedAt = new Date()
     const author = 'Furqon'
     const file = formData.get('image') as File | null
 
-    if (!title || !content || !category || !file) {
+    if (!title || !content || !categoryId || !file) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 })
     }
 
@@ -59,7 +59,6 @@ export async function POST(req: Request) {
       const uploadDir = path.join(process.cwd(), 'public/uploads')
       const filePath = path.join(uploadDir, fileName)
 
-      // Pastikan direktori `public/uploads` tersedia
       fs.mkdirSync(uploadDir, { recursive: true })
       fs.writeFileSync(filePath, buffer)
 
@@ -71,15 +70,8 @@ export async function POST(req: Request) {
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
 
-    let categoryRecord = await prisma.category.findUnique({
-      where: { name: category },
-    })
-
-    if (!categoryRecord) {
-      categoryRecord = await prisma.category.create({
-        data: { name: category },
-      })
-    }
+    // Tidak perlu mencari/membuat category baru
+    // Langsung connect dengan category yang sudah ada pakai categoryId
 
     const newPost = await prisma.post.create({
       data: {
@@ -87,9 +79,9 @@ export async function POST(req: Request) {
         slug,
         content,
         category: {
-          connect: { id: categoryRecord.id },
+          connect: { id: categoryId },
         },
-        publishedAt: new Date(publishedAt),
+        publishedAt,
         author,
         image: imagePath ?? '',
       },

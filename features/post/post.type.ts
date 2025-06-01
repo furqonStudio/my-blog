@@ -1,3 +1,5 @@
+import { Category } from '@/features/categories/category.type'
+
 export type Post = {
   id: number
   title: string
@@ -5,9 +7,13 @@ export type Post = {
   image: string
   publishedAt: Date
   content: string
-  category: {
-    id: string
-    name: string
-  }
-  author: string | null
+  category: Category
+  author: string
+}
+
+export type PostFormValues = {
+  title: string
+  content: string
+  categoryId: string
+  image: File
 }

@@ -1,12 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Post } from '../post.type'
-
-export type PostFormValues = {
-  title: string
-  content: string
-  category?: string
-  image?: File
-}
+import { Post, PostFormValues } from '../post.type'
 
 const fetchPosts = async (): Promise<Post[]> => {
   const res = await fetch('/api/posts')
@@ -18,7 +11,7 @@ const addPost = async (data: PostFormValues): Promise<Post> => {
   const formData = new FormData()
   formData.append('title', data.title)
   formData.append('content', data.content)
-  if (data.category) formData.append('category', data.category)
+  if (data.categoryId) formData.append('categoryId', data.categoryId)
   if (data.image) formData.append('image', data.image)
 
   const res = await fetch('/api/posts', {

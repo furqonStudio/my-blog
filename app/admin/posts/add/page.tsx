@@ -32,6 +32,7 @@ import {
   useDeleteCategory,
 } from '@/features/categories/hooks/useCategories'
 import { useAddPost } from '@/features/post/hooks/usePosts'
+import { PostFormValues } from '@/features/post/post.type'
 
 const postSchema = z.object({
   title: z.string().min(1, 'Judul wajib diisi'),
@@ -40,14 +41,11 @@ const postSchema = z.object({
     .refine((val) => val.replace(/<[^>]+>/g, '').trim().length > 0, {
       message: 'Konten wajib diisi',
     }),
-  category: z.string().optional(),
-  image: z
-    .any()
-    .refine((file) => !file || file instanceof File, 'Gambar tidak valid')
-    .optional(),
+  categoryId: z.string().min(1, 'Kategori wajib dipilih'),
+  image: z.instanceof(File, {
+    message: 'Gambar tidak valid atau belum dipilih',
+  }),
 })
-
-type PostFormValues = z.infer<typeof postSchema>
 
 const AddPost = () => {
   const router = useRouter()
@@ -60,7 +58,7 @@ const AddPost = () => {
     defaultValues: {
       title: '',
       content: '',
-      category: '',
+      categoryId: '',
       image: undefined,
     },
   })
@@ -167,7 +165,7 @@ const AddPost = () => {
         <div className="space-y-4">
           {/* Kategori */}
           <Controller
-            name="category"
+            name="categoryId"
             control={control}
             render={({ field }) => (
               <div className="space-y-2 rounded-md border p-4">
