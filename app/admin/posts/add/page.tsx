@@ -37,14 +37,10 @@ import { NextResponse } from 'next/server'
 
 const AddPost = () => {
   const router = useRouter()
-  const [submitStatus, setSubmitStatus] = useState<'PUBLISHED' | 'DRAFT'>(
-    'PUBLISHED',
-  )
 
   const {
     control,
     handleSubmit,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<PostFormValues>({
@@ -56,6 +52,8 @@ const AddPost = () => {
       status: 'PUBLISHED',
     },
   })
+
+  console.log('🚀 ~ onSubmit ~ errors:', errors)
 
   const addPost = useAddPost()
   const imageFile = watch('imageUrl')
@@ -77,21 +75,23 @@ const AddPost = () => {
   const addCategory = useAddCategory()
   const deleteCategory = useDeleteCategory()
 
-  const onSubmit = async (data: PostFormValues) => {
+  const onSubmit = async (
+    data: PostFormValues,
+    status: 'PUBLISHED' | 'DRAFT',
+  ) => {
     try {
-      const schema = submitStatus === 'DRAFT' ? draftSchema : postSchema
+      const schema = status === 'DRAFT' ? draftSchema : postSchema
       schema.parse(data)
 
-      data.status = submitStatus
+      data.status = status
 
       addPost.mutate(data, {
         onSuccess: () => {
           toast.success(
-            submitStatus === 'DRAFT'
+            status === 'DRAFT'
               ? 'Draf berhasil disimpan!'
               : 'Post berhasil dipublikasikan!',
           )
-          // router.push('/posts')
         },
         onError: (err) => {
           console.log('🚀 ~ onSubmit ~ err:', err)
@@ -115,21 +115,16 @@ const AddPost = () => {
           { status: 400 },
         )
       }
-      // error lain
       return NextResponse.json({ error: 'Gagal membuat post' }, { status: 500 })
     }
   }
 
   const submitPublish = () => {
-    setSubmitStatus('PUBLISHED')
-    setValue('status', 'PUBLISHED', { shouldValidate: false })
-    handleSubmit(onSubmit)()
+    handleSubmit((data) => onSubmit(data, 'PUBLISHED'))()
   }
 
   const submitDraft = () => {
-    setSubmitStatus('DRAFT')
-    setValue('status', 'DRAFT', { shouldValidate: false })
-    handleSubmit(onSubmit)()
+    handleSubmit((data) => onSubmit(data, 'DRAFT'))()
   }
 
   const handleAddCategory = () => {
