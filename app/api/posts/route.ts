@@ -4,6 +4,22 @@ import { v4 as uuid } from 'uuid'
 import fs from 'fs'
 import path from 'path'
 
+export async function GET() {
+  const posts = await prisma.post.findMany({
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      image: true,
+      publishedAt: true,
+      content: true,
+      author: true,
+      category: true,
+    },
+  })
+  return NextResponse.json(posts)
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()

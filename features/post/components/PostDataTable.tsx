@@ -38,9 +38,10 @@ const columns: ColumnDef<Post>[] = [
   {
     accessorKey: 'category',
     header: 'Category',
-    cell: ({ row }) => (
-      <Badge variant="outline">{row.getValue('category')}</Badge>
-    ),
+    cell: ({ row }) => {
+      const category = row.original.category
+      return <Badge variant="outline">{category?.name ?? '-'}</Badge>
+    },
   },
   {
     accessorKey: 'author',
@@ -77,6 +78,7 @@ const columns: ColumnDef<Post>[] = [
 
 export default function PostDataTable() {
   const { data: posts = [], isLoading: isLoadingPosts } = usePosts()
+  console.log('🚀 ~ PostDataTable ~ posts:', posts)
 
   if (isLoadingPosts) {
     return <Skeleton className="h-32 w-full" />

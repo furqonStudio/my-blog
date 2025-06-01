@@ -5,6 +5,9 @@ export type Post = {
   image: string
   publishedAt: Date
   content: string
-  category: string | null
+  category: {
+    id: string
+    name: string
+  }
   author: string | null
 }
