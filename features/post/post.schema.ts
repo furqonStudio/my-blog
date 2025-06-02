@@ -4,18 +4,17 @@ export const createPostSchema = z
   .object({
     title: z.string().optional(),
     content: z.string().optional(),
-    imageUrl: z.string().url().optional(),
     categoryId: z.string().cuid().optional(),
     status: z.enum(['DRAFT', 'PUBLISHED']),
+    imageFile: z.any().optional(), // tambahkan ini untuk validasi file upload
   })
   .superRefine((data, ctx) => {
-    const { title, content, imageUrl, categoryId, status } = data
+    const { title, content, imageFile, categoryId, status } = data
 
-    // Semua field kosong checker
     const allEmpty =
       (!title || title.trim() === '') &&
       (!content || content.trim() === '') &&
-      (!imageUrl || imageUrl.trim() === '') &&
+      !imageFile &&
       (!categoryId || categoryId.trim() === '')
 
     if (status === 'DRAFT') {
@@ -23,13 +22,12 @@ export const createPostSchema = z
         ctx.addIssue({
           code: 'custom',
           message: 'Minimal satu field harus diisi untuk draft',
-          path: [], // error global
+          path: [],
         })
       }
     }
 
     if (status === 'PUBLISHED') {
-      // Semua wajib
       if (!title || title.trim() === '') {
         ctx.addIssue({
           code: 'custom',
@@ -44,11 +42,11 @@ export const createPostSchema = z
           message: 'Konten wajib diisi saat publish',
         })
       }
-      if (!imageUrl || imageUrl.trim() === '') {
+      if (!imageFile) {
         ctx.addIssue({
           code: 'custom',
-          path: ['imageUrl'],
-          message: 'Image URL wajib diisi saat publish',
+          path: ['imageFile'],
+          message: 'Image wajib diupload saat publish',
         })
       }
       if (!categoryId || categoryId.trim() === '') {
