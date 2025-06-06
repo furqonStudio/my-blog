@@ -4,56 +4,58 @@ export const createPostSchema = z
   .object({
     title: z.string().optional(),
     content: z.string().optional(),
-    categoryId: z.string().cuid().optional(),
+    categoryId: z.string().optional(),
     status: z.enum(['DRAFT', 'PUBLISHED']),
-    imageFile: z.any().optional(), // tambahkan ini untuk validasi file upload
+    image: z.instanceof(File).optional(),
   })
   .superRefine((data, ctx) => {
-    const { title, content, imageFile, categoryId, status } = data
+    const isEmptyContent =
+      !data.content ||
+      data.content.trim() === '' ||
+      data.content.trim() === '<p dir="auto"></p>'
 
-    const allEmpty =
-      (!title || title.trim() === '') &&
-      (!content || content.trim() === '') &&
-      !imageFile &&
-      (!categoryId || categoryId.trim() === '')
-
-    if (status === 'DRAFT') {
-      if (allEmpty) {
+    if (data.status === 'PUBLISHED') {
+      if (!data.title?.trim()) {
         ctx.addIssue({
-          code: 'custom',
-          message: 'Minimal satu field harus diisi untuk draft',
-          path: [],
+          path: ['title'],
+          code: z.ZodIssueCode.custom,
+          message: 'Judul wajib diisi saat publish.',
+        })
+      }
+      if (isEmptyContent) {
+        ctx.addIssue({
+          path: ['content'],
+          code: z.ZodIssueCode.custom,
+          message: 'Konten wajib diisi saat publish.',
+        })
+      }
+      if (!data.categoryId?.trim()) {
+        ctx.addIssue({
+          path: ['categoryId'],
+          code: z.ZodIssueCode.custom,
+          message: 'Category ID wajib diisi saat publish.',
+        })
+      }
+      if (!data.image) {
+        ctx.addIssue({
+          path: ['image'],
+          code: z.ZodIssueCode.custom,
+          message: 'Image wajib diupload saat publish.',
         })
       }
     }
 
-    if (status === 'PUBLISHED') {
-      if (!title || title.trim() === '') {
+    if (data.status === 'DRAFT') {
+      const isAllEmpty =
+        !data.title?.trim() &&
+        !data.content?.trim() &&
+        !data.categoryId?.trim() &&
+        !data.image
+
+      if (isAllEmpty) {
         ctx.addIssue({
-          code: 'custom',
-          path: ['title'],
-          message: 'Judul wajib diisi saat publish',
-        })
-      }
-      if (!content || content.trim() === '') {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['content'],
-          message: 'Konten wajib diisi saat publish',
-        })
-      }
-      if (!imageFile) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['imageFile'],
-          message: 'Image wajib diupload saat publish',
-        })
-      }
-      if (!categoryId || categoryId.trim() === '') {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['categoryId'],
-          message: 'Kategori wajib diisi saat publish',
+          code: z.ZodIssueCode.custom,
+          message: 'Tidak bisa menyimpan draft kosong semua.',
         })
       }
     }

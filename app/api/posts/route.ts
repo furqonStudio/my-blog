@@ -6,6 +6,10 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData()
 
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value)
+    }
+
     const title = formData.get('title') as string | null
     const content = (formData.get('content') as string) || ''
     const status = (formData.get('status') as string) || 'DRAFT'
@@ -24,7 +28,7 @@ export async function POST(request: Request) {
     // Validasi pakai Zod (berikan image info juga jika diperlukan)
     const validation = createPostSchema.safeParse({
       title,
-      content,
+      content, 
       status,
       categoryId,
       imageFile,
@@ -44,7 +48,7 @@ export async function POST(request: Request) {
       status: status as 'DRAFT' | 'PUBLISHED',
       categoryId: categoryId ?? undefined,
       imageBuffer,
-      imageExt
+      imageExt,
     })
 
     return NextResponse.json(post, { status: 201 })
