@@ -1,52 +1,51 @@
+import { generateFallbackTitle } from '@/features/post/utils/generateFallbackTitle'
+import { generateUniqueSlug } from '@/features/post/utils/generateSlug'
 import prisma from '@/lib/prisma'
-import { generateSlug } from '@/features/post/utils/generateSlug'
+import { saveImageToPublic } from '@/utils/saveImageToPublic'
 
 type CreatePostInput = {
   title?: string
   content?: string
   status: 'DRAFT' | 'PUBLISHED'
-  categoryId?: string | null
-  imageBuffer?: Buffer | null
-  imageExt?: string | null
+  categoryId?: string
+  imageBuffer?: Buffer
+  imageExt?: string
+  author?: string
 }
 
 export async function createPost(input: CreatePostInput) {
-  let { title, content = '', status, categoryId, imageBuffer, imageExt } = input
+  const {
+    title,
+    content = '',
+    status,
+    categoryId,
+    imageBuffer,
+    imageExt,
+    author = 'Furqon',
+  } = input
 
-  // Handle draft title auto generate
-  if (status === 'DRAFT' && (!title || title.trim() === '')) {
-    title =
-      content.trim() !== ''
-        ? content.trim().slice(0, 20) + (content.length > 20 ? '...' : '')
-        : `draft-post-${Date.now()}`
-  }
+  const finalTitle =
+    status === 'DRAFT' && (!title || title.trim() === '')
+      ? generateFallbackTitle(content)
+      : title?.trim() || 'Untitled'
 
-  const slug = generateSlug(title ?? 'untitled')
+  const slug = await generateUniqueSlug(finalTitle)
 
-  // Upload image to /public/uploads if imageBuffer and imageExt exist
-  let imageUrl = null
-  if (imageBuffer && imageExt) {
-    const { promises: fs } = await import('fs')
-    const path = await import('path')
-    const { v4: uuidv4 } = await import('uuid')
-
-    const fileName = `${uuidv4()}${imageExt}`
-    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
-    await fs.writeFile(filePath, imageBuffer)
-    imageUrl = `/uploads/${fileName}`
-  }
+  const imageUrl =
+    imageBuffer && imageExt
+      ? await saveImageToPublic(imageBuffer, imageExt)
+      : null
 
   const publishedAt = status === 'PUBLISHED' ? new Date() : null
-  console.log('🚀 ~ createPost ~ imageUrl:', imageUrl)
 
   const post = await prisma.post.create({
     data: {
-      title,
+      title: finalTitle,
       slug,
-      content,
+      content: content.trim(),
       status,
-      categoryId,
-      author: 'furqon',
+      categoryId: categoryId ?? null,
+      author,
       imageUrl,
       publishedAt,
     },
