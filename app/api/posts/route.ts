@@ -1,7 +1,7 @@
 import { createPost, getPosts } from '@/features/post/post.controller'
 import { createPostSchema } from '@/features/post/post.schema'
 import { getFormFile, getFormString } from '@/utils/form'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET() {
   try {
@@ -16,7 +16,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 

@@ -62,3 +62,9 @@ export async function createPost(input: CreatePostInput) {
 
   return post
 }
+
+export const deletePost = async (id: number) => {
+  return await prisma.post.delete({
+    where: { id },
+  })
+}

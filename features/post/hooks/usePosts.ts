@@ -21,6 +21,39 @@ export const createPost = async (formData: FormData): Promise<Post> => {
   return await res.json()
 }
 
+export const deletePost = async (id: string): Promise<Post> => {
+  const res = await fetch(`/api/posts/${id}`, {
+    method: 'DELETE',
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal menghapus post')
+  }
+
+  return await res.json()
+}
+
+const updatePost = async ({
+  id,
+  formData,
+}: {
+  id: string
+  formData: FormData
+}): Promise<Post> => {
+  const res = await fetch(`/api/posts/${id}`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal mengupdate post')
+  }
+
+  return await res.json()
+}
+
 export const usePosts = () => {
   return useQuery<Post[], Error>({
     queryKey: ['posts'],
@@ -33,6 +66,28 @@ export const useCreatePost = () => {
 
   return useMutation({
     mutationFn: createPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+    },
+  })
+}
+
+export const useDeletePost = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+    },
+  })
+}
+
+export const useUpdatePost = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updatePost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
     },
