@@ -30,7 +30,7 @@ const columns: ColumnDef<Post>[] = [
       return (
         <div className="bg-muted relative aspect-video w-full max-w-[96px] overflow-hidden rounded-md">
           <Image
-            src={rawUrl ? imageUrl : '/placeholder.png'}
+            src={rawUrl ? imageUrl : '/placeholder.webp'}
             alt="Thumbnail"
             fill
             className="object-cover"
@@ -47,16 +47,7 @@ const columns: ColumnDef<Post>[] = [
     ),
     enableHiding: false,
   },
-  {
-    accessorKey: 'publishedAt',
-    header: 'Published At',
-    cell: ({ row }) => {
-      const date = new Date(row.getValue('publishedAt'))
-      return (
-        <div className="text-muted-foreground">{date.toLocaleDateString()}</div>
-      )
-    },
-  },
+
   {
     accessorKey: 'category',
     header: 'Category',
@@ -66,9 +57,19 @@ const columns: ColumnDef<Post>[] = [
     },
   },
   {
-    accessorKey: 'author',
-    header: 'Author',
-    cell: ({ row }) => <div>{row.getValue('author')}</div>,
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => <div>{row.getValue('status')}</div>,
+  },
+  {
+    accessorKey: 'publishedAt',
+    header: 'Published At',
+    cell: ({ row }) => {
+      const date = new Date(row.getValue('publishedAt'))
+      return (
+        <div className="text-muted-foreground">{date.toLocaleDateString()}</div>
+      )
+    },
   },
   {
     id: 'actions',
