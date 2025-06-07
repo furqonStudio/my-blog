@@ -124,7 +124,7 @@ const AddPost = () => {
       toast.success(
         `Berhasil disimpan sebagai ${data.status === 'DRAFT' ? 'draf' : 'publikasi'}`,
       )
-      //   router.push('/posts')
+      router.back()
     },
     onError: (err) => {
       console.log('🚀 ~ AddPost ~ err:', err.message)
