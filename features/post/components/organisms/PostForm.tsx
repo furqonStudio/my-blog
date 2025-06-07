@@ -17,17 +17,24 @@ import EditorClient from '../EditorClient'
 import { CategorySelector } from '../molecules/CategorySelector'
 import { FeatureImageUpload } from '../molecules/FeatureImageUpload'
 import PostActions from '../molecules/PostActions'
+import { useEffect } from 'react'
 
 export type CreatePostSchema = z.infer<typeof createPostSchema>
 
 interface PostFormProps {
   onSubmit: (data: CreatePostSchema) => void
   isSubmitting: boolean
+  defaultValues?: Partial<CreatePostSchema>
 }
 
-export const PostForm = ({ onSubmit, isSubmitting }: PostFormProps) => {
+export const PostForm = ({
+  onSubmit,
+  isSubmitting,
+  defaultValues,
+}: PostFormProps) => {
   const form = useForm<CreatePostSchema>({
     resolver: zodResolver(createPostSchema),
+    defaultValues,
   })
 
   const { control, handleSubmit, watch, setValue } = form
@@ -35,6 +42,10 @@ export const PostForm = ({ onSubmit, isSubmitting }: PostFormProps) => {
   const content = watch('content')
   const category = watch('categoryId')
   const image = watch('image')
+
+  useEffect(() => {
+    form.reset(defaultValues)
+  }, [defaultValues, form])
 
   return (
     <Form {...form}>

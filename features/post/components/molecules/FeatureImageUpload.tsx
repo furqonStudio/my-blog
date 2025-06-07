@@ -16,12 +16,18 @@ export const FeatureImageUpload = () => {
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    if (imageFile && typeof imageFile !== 'string') {
+    if (imageFile instanceof File) {
       const url = URL.createObjectURL(imageFile)
       setPreviewUrl(url)
-      return () => URL.revokeObjectURL(url)
+
+      // Cleanup
+      return () => {
+        URL.revokeObjectURL(url)
+      }
     } else if (typeof imageFile === 'string') {
-      setPreviewUrl(imageFile)
+      setPreviewUrl(imageFile) // URL dari server
+    } else {
+      setPreviewUrl(undefined)
     }
   }, [imageFile])
 

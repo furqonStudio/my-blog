@@ -2,17 +2,37 @@
 
 import { SiteHeader } from '@/components/site-header'
 import { PostForm } from '@/features/post/components/organisms/PostForm'
-import { useCreatePost } from '@/features/post/hooks/usePosts'
+import { usePost, useUpdatePost } from '@/features/post/hooks/usePosts'
 import { createPostSchema } from '@/features/post/post.schema'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
 type CreatePostSchema = z.infer<typeof createPostSchema>
 
 const EditPost = () => {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const createPost = useCreatePost()
+
+  const { data: post, isLoading } = usePost(id)
+  const updatePost = useUpdatePost()
+
+  const [defaultValues, setDefaultValues] = useState<Partial<CreatePostSchema>>(
+    {},
+  )
+
+  useEffect(() => {
+    if (post) {
+      setDefaultValues({
+        title: post.title,
+        content: post.content,
+        status: post.status,
+        categoryId: String(post.categoryId),
+        image: post.imageUrl,
+      })
+    }
+  }, [post])
 
   const onSubmit = (data: CreatePostSchema) => {
     const formData = new FormData()
@@ -28,23 +48,29 @@ const EditPost = () => {
     }
     console.log('Form Data:', test)
 
-    createPost.mutate(formData, {
-      onSuccess: (data) => {
-        toast.success(
-          `Berhasil disimpan sebagai ${data.status === 'DRAFT' ? 'draf' : 'publikasi'}`,
-        )
-        router.back()
+    updatePost.mutate(
+      { id, formData },
+      {
+        onSuccess: () => {
+          toast.success('Post berhasil diperbarui')
+          router.back()
+        },
+        onError: (err) => {
+          console.log('🚀 ~ onSubmit ~ err:', err)
+          toast.error(err.message || 'Gagal mengupdate post')
+        },
       },
-      onError: (err) => {
-        toast.error(err.message || 'Gagal menyimpan')
-      },
-    })
+    )
   }
 
   return (
     <>
       <SiteHeader />
-      <PostForm onSubmit={onSubmit} isSubmitting={createPost.isPending} />
+      <PostForm
+        onSubmit={onSubmit}
+        isSubmitting={updatePost.isPending}
+        defaultValues={defaultValues}
+      />
     </>
   )
 }

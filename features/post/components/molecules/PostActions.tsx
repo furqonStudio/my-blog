@@ -9,7 +9,7 @@ interface PostActionsProps {
   title?: string
   content?: string
   category?: string
-  image?: File | undefined
+  image?: File | string | undefined
 }
 
 const PostActions = ({

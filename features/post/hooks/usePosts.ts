@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Post } from '../post.type'
+import { Post, PostDetail } from '../post.type'
 
 const fetchPosts = async (): Promise<Post[]> => {
   const res = await fetch('/api/posts')
@@ -7,7 +7,7 @@ const fetchPosts = async (): Promise<Post[]> => {
   return (await res.json()) as Post[]
 }
 
-const fetchPostById = async (id: string): Promise<Post> => {
+const fetchPostById = async (id: string): Promise<PostDetail> => {
   const res = await fetch(`/api/posts/${id}`)
 
   if (!res.ok) {
@@ -53,7 +53,7 @@ const updatePost = async ({
   formData: FormData
 }): Promise<Post> => {
   const res = await fetch(`/api/posts/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: formData,
   })
 
@@ -73,7 +73,7 @@ export const usePosts = () => {
 }
 
 export const usePost = (id: string) => {
-  return useQuery<Post, Error>({
+  return useQuery<PostDetail, Error>({
     queryKey: ['post', id],
     queryFn: () => fetchPostById(id),
     enabled: !!id,

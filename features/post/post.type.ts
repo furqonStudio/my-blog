@@ -13,10 +13,15 @@ export type Post = {
   status: PostStatus
 }
 
-export type PostFormValues = {
+export type PostDetail = {
+  id: number
   title: string
-  content?: string
-  imageUrl?: File | string
-  categoryId?: string
+  slug: string
+  imageUrl: string
+  publishedAt: Date
+  content: string
+  category: Category
+  categoryId: string
+  author: string
   status: PostStatus
 }

@@ -7,7 +7,7 @@ export const createPostSchema = z
     content: z.string().optional(),
     categoryId: z.string().optional(),
     status: z.enum(['DRAFT', 'PUBLISHED']),
-    image: z.instanceof(File).optional(),
+    image: z.union([z.instanceof(File), z.string()]).optional(),
   })
   .superRefine((data, ctx) => {
     const isContentEmpty = isEditorContentEmpty(data.content)
