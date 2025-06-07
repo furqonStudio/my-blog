@@ -7,7 +7,18 @@ const fetchPosts = async (): Promise<Post[]> => {
   return (await res.json()) as Post[]
 }
 
-export const createPost = async (formData: FormData): Promise<Post> => {
+const fetchPostById = async (id: string): Promise<Post> => {
+  const res = await fetch(`/api/posts/${id}`)
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.message || 'Gagal mengambil detail post')
+  }
+
+  return await res.json()
+}
+
+const createPost = async (formData: FormData): Promise<Post> => {
   const res = await fetch('/api/posts', {
     method: 'POST',
     body: formData,
@@ -21,7 +32,7 @@ export const createPost = async (formData: FormData): Promise<Post> => {
   return await res.json()
 }
 
-export const deletePost = async (id: string): Promise<Post> => {
+const deletePost = async (id: string): Promise<Post> => {
   const res = await fetch(`/api/posts/${id}`, {
     method: 'DELETE',
   })
@@ -58,6 +69,14 @@ export const usePosts = () => {
   return useQuery<Post[], Error>({
     queryKey: ['posts'],
     queryFn: fetchPosts,
+  })
+}
+
+export const usePost = (id: string) => {
+  return useQuery<Post, Error>({
+    queryKey: ['post', id],
+    queryFn: () => fetchPostById(id),
+    enabled: !!id,
   })
 }
 

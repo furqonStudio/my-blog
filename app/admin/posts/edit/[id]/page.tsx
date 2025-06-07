@@ -49,4 +49,4 @@ const EditPost = () => {
   )
 }
 
-export default AddPost
+export default EditPost
