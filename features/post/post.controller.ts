@@ -38,6 +38,17 @@ export const getPosts = async () => {
   }))
 }
 
+export const getPostById = async (id: number) => {
+  return await prisma.post.findUnique({
+    where: { id },
+    include: {
+      category: {
+        select: { name: true },
+      },
+    },
+  })
+}
+
 export async function createPost(input: PostInput) {
   const {
     title,
