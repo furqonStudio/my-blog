@@ -61,8 +61,6 @@ const AddPost = () => {
     const isCategoryEmpty = !category
     const isImageEmpty = !(imageFile instanceof File)
 
-    console.log('🚀 ~ isAllEmpty ~ isTitleEmpty:', isTitleEmpty)
-
     return isTitleEmpty && isContentEmpty && isCategoryEmpty && isImageEmpty
   }, [title, isContentEmpty, category, imageFile])
 
@@ -129,6 +127,8 @@ const AddPost = () => {
       //   router.push('/posts')
     },
     onError: (err) => {
+      console.log('🚀 ~ AddPost ~ err:', err.message)
+
       toast.error(err.message || 'Gagal menyimpan')
     },
   })

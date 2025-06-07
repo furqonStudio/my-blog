@@ -1,37 +1,37 @@
 import { createPost } from '@/features/post/post.controller'
 import { createPostSchema } from '@/features/post/post.schema'
+import { getFormFile, getFormString } from '@/utils/form'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
 
+    const test: Record<string, FormDataEntryValue> = {}
     for (const [key, value] of formData.entries()) {
-      console.log(`${key}:`, value)
+      test[key] = value
     }
 
-    const title = formData.get('title') as string | null
-    const content = (formData.get('content') as string) || ''
-    const status = (formData.get('status') as string) || 'DRAFT'
-    const categoryId = formData.get('categoryId') as string | undefined
-    const imageFile = formData.get('image') as File | null
+    const title = getFormString(formData, 'title')
+    const content = getFormString(formData, 'content')
+    const status = getFormString(formData, 'status')
+    const categoryId = getFormString(formData, 'categoryId')
+    const imageFile = getFormFile(formData, 'image')
 
-    // Persiapkan image buffer dan ext
-    let imageBuffer: Buffer | null = null
-    let imageExt: string | null = null
+    let imageBuffer: Buffer | undefined
+    let imageExt: string | undefined
 
-    if (imageFile && imageFile.size > 0) {
+    if (imageFile) {
       imageBuffer = Buffer.from(await imageFile.arrayBuffer())
       imageExt = '.' + imageFile.name.split('.').pop()
     }
 
-    // Validasi pakai Zod (berikan image info juga jika diperlukan)
     const validation = createPostSchema.safeParse({
       title,
-      content, 
+      content,
       status,
       categoryId,
-      imageFile,
+      image: imageFile,
     })
 
     if (!validation.success) {
@@ -41,12 +41,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Kirim data ke controller
     const post = await createPost({
-      title: title ?? undefined,
+      title,
       content,
       status: status as 'DRAFT' | 'PUBLISHED',
-      categoryId: categoryId ?? undefined,
+      categoryId,
       imageBuffer,
       imageExt,
     })
