@@ -51,9 +51,10 @@ export const PostForm = ({ onSubmit, isSubmitting }: PostFormProps) => {
                 <FormLabel>Judul Artikel</FormLabel>
                 <FormControl>
                   <Input
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
                     placeholder="Judul artikel"
                     className="px-3 py-5 text-3xl font-bold"
-                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
