@@ -18,6 +18,7 @@ import { CategorySelector } from '../molecules/CategorySelector'
 import { FeatureImageUpload } from '../molecules/FeatureImageUpload'
 import PostActions from '../molecules/PostActions'
 import { useEffect } from 'react'
+import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor'
 
 export type CreatePostSchema = z.infer<typeof createPostSchema>
 
@@ -80,10 +81,7 @@ export const PostForm = ({
               <FormItem>
                 <FormLabel>Konten</FormLabel>
                 <FormControl>
-                  <EditorClient
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                  />
+                  <SimpleEditor />
                 </FormControl>
                 <FormMessage />
               </FormItem>
