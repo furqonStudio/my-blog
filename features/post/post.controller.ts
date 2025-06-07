@@ -3,14 +3,13 @@ import { generateUniqueSlug } from '@/features/post/utils/generateSlug'
 import prisma from '@/lib/prisma'
 import { saveImageToPublic } from '@/utils/saveImageToPublic'
 
-type CreatePostInput = {
+type PostInput = {
   title?: string
   content?: string
   status: 'DRAFT' | 'PUBLISHED'
   categoryId?: string
   imageBuffer?: Buffer
   imageExt?: string
-  author?: string
 }
 
 export const getPosts = async () => {
@@ -39,7 +38,7 @@ export const getPosts = async () => {
   }))
 }
 
-export async function createPost(input: CreatePostInput) {
+export async function createPost(input: PostInput) {
   const {
     title,
     content = '',
@@ -47,9 +46,9 @@ export async function createPost(input: CreatePostInput) {
     categoryId,
     imageBuffer,
     imageExt,
-    author = 'Furqon',
   } = input
 
+  const author = 'Furqon'
   const finalTitle =
     status === 'DRAFT' && (!title || title.trim() === '')
       ? generateFallbackTitle(content)
@@ -78,6 +77,31 @@ export async function createPost(input: CreatePostInput) {
   })
 
   return post
+}
+
+export async function updatePost(id: number, input: PostInput) {
+  const { title, content, status, categoryId, imageBuffer, imageExt } = input
+
+  const imageUrl =
+    imageBuffer && imageExt
+      ? await saveImageToPublic(imageBuffer, imageExt)
+      : null
+
+  const updated = await prisma.post.update({
+    where: { id },
+    data: {
+      ...(title && { title }),
+      ...(content && { content }),
+      ...(status && {
+        status,
+        publishedAt: status === 'PUBLISHED' ? new Date() : null,
+      }),
+      categoryId: categoryId ?? undefined,
+      ...(imageUrl && { imageUrl }),
+    },
+  })
+
+  return updated
 }
 
 export const deletePost = async (id: number) => {
