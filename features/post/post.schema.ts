@@ -1,3 +1,4 @@
+import { isEditorContentEmpty } from '@/utils/editor'
 import { z } from 'zod'
 
 export const createPostSchema = z
@@ -9,10 +10,7 @@ export const createPostSchema = z
     image: z.instanceof(File).optional(),
   })
   .superRefine((data, ctx) => {
-    const isEmptyContent =
-      !data.content ||
-      data.content.trim() === '' ||
-      data.content.trim() === '<p dir="auto"></p>'
+    const isContentEmpty = isEditorContentEmpty(data.content)
 
     if (data.status === 'PUBLISHED') {
       if (!data.title?.trim()) {
@@ -22,7 +20,7 @@ export const createPostSchema = z
           message: 'Judul wajib diisi saat publish.',
         })
       }
-      if (isEmptyContent) {
+      if (isContentEmpty) {
         ctx.addIssue({
           path: ['content'],
           code: z.ZodIssueCode.custom,
@@ -48,7 +46,7 @@ export const createPostSchema = z
     if (data.status === 'DRAFT') {
       const isAllEmpty =
         !data.title?.trim() &&
-        !data.content?.trim() &&
+        isContentEmpty &&
         !data.categoryId?.trim() &&
         !data.image
 

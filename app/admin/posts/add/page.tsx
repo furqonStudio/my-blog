@@ -16,23 +16,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import EditorClient from '@/features/post/components/EditorClient'
-import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { z } from 'zod'
-
 import {
   useAddCategory,
   useCategories,
   useDeleteCategory,
 } from '@/features/categories/hooks/useCategories'
+import EditorClient from '@/features/post/components/EditorClient'
 import { createPostSchema } from '@/features/post/post.schema'
+import { isEditorContentEmpty } from '@/utils/editor'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
+import { Check, ChevronDown, Plus, Trash, Upload } from 'lucide-react'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
 
-type FormData = z.infer<typeof createPostSchema>
+type CreatePostSchema = z.infer<typeof createPostSchema>
 
 const AddPost = () => {
   const router = useRouter()
@@ -42,9 +44,28 @@ const AddPost = () => {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<FormData>({})
+    setValue,
+  } = useForm<CreatePostSchema>({
+    resolver: zodResolver(createPostSchema),
+  })
 
+  const title = watch('title')
+  const content = watch('content')
+  const category = watch('categoryId')
   const imageFile = watch('image')
+
+  const isContentEmpty = isEditorContentEmpty(content)
+
+  const isAllEmpty = useMemo(() => {
+    const isTitleEmpty = !title || title.trim() === ''
+    const isCategoryEmpty = !category
+    const isImageEmpty = !(imageFile instanceof File)
+
+    console.log('🚀 ~ isAllEmpty ~ isTitleEmpty:', isTitleEmpty)
+
+    return isTitleEmpty && isContentEmpty && isCategoryEmpty && isImageEmpty
+  }, [title, isContentEmpty, category, imageFile])
+
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined)
 
   useEffect(() => {
@@ -87,15 +108,53 @@ const AddPost = () => {
     })
   }
 
-  const onSubmit = (data: FormData) => {
-    console.log('Valid:', data)
+  const createPost = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'Gagal menyimpan post')
+      }
+
+      return res.json()
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `Berhasil disimpan sebagai ${data.status === 'DRAFT' ? 'draf' : 'publikasi'}`,
+      )
+      //   router.push('/posts')
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Gagal menyimpan')
+    },
+  })
+
+  const onSubmit = (data: CreatePostSchema) => {
+    const formData = new FormData()
+    if (data.title) formData.append('title', data.title)
+    if (data.content) formData.append('content', data.content)
+    if (data.categoryId) formData.append('categoryId', data.categoryId)
+    formData.append('status', data.status)
+    if (data.image instanceof File) formData.append('image', data.image)
+
+    const test: Record<string, FormDataEntryValue> = {}
+    for (const [key, value] of formData.entries()) {
+      test[key] = value
+    }
+    console.log('Form Data:', test)
+
+    createPost.mutate(formData)
   }
 
   return (
     <>
       <SiteHeader />
       <form
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={handleSubmit(onSubmit)}
         className="flex flex-col gap-6 px-6 py-6 md:flex-row"
       >
         <div className="flex flex-1 flex-col gap-4">
@@ -139,12 +198,29 @@ const AddPost = () => {
           />
 
           <div className="mt-4 flex gap-2">
-            <Button type="button" onClick={handleSubmit(onSubmit)}>
-              {true ? 'Menyimpan...' : 'Publikasikan'}
-            </Button>
-            <Button type="button" variant="outline">
-              Simpan sebagai Draf
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button
+                type="button"
+                disabled={createPost.isPending || isAllEmpty}
+                onClick={() => {
+                  setValue('status', 'PUBLISHED')
+                  handleSubmit(onSubmit)()
+                }}
+              >
+                {createPost.isPending ? 'Menyimpan...' : 'Publikasikan'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={createPost.isPending || isAllEmpty}
+                onClick={() => {
+                  setValue('status', 'DRAFT')
+                  handleSubmit(onSubmit)()
+                }}
+              >
+                {createPost.isPending ? 'Menyimpan...' : 'Simpan sebagai Draf'}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -224,6 +300,11 @@ const AddPost = () => {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {errors.categoryId && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.categoryId.message}
+                  </p>
+                )}
               </div>
             )}
           />
@@ -262,6 +343,11 @@ const AddPost = () => {
                     }}
                   />
                 </label>
+                {errors.image && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.image.message}
+                  </p>
+                )}
               </div>
             )}
           />
