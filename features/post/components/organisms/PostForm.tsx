@@ -37,15 +37,15 @@ export const PostForm = ({
     defaultValues,
   })
 
-  const { control, handleSubmit, watch, setValue } = form
+  const { control, handleSubmit, watch, setValue, reset } = form
   const title = watch('title')
   const content = watch('content')
   const category = watch('categoryId')
   const image = watch('image')
 
   useEffect(() => {
-    form.reset(defaultValues)
-  }, [defaultValues, form])
+    reset(defaultValues)
+  }, [defaultValues, reset])
 
   return (
     <Form {...form}>

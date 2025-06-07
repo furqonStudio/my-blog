@@ -7,11 +7,12 @@ import { getFormFile, getFormString } from '@/utils/form'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
+
     const post = await getPostById(Number(id))
 
     if (!post) {
@@ -29,10 +30,10 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     if (!id) {
       return NextResponse.json(
@@ -58,9 +59,10 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params
     const formData = await req.formData()
 
     const title = getFormString(formData, 'title')
@@ -76,7 +78,7 @@ export async function PATCH(
       imageExt = '.' + imageFile.name.split('.').pop()
     }
 
-    const updated = await updatePost(Number(params.id), {
+    const updated = await updatePost(Number(id), {
       title,
       content,
       status: status as 'DRAFT' | 'PUBLISHED',
