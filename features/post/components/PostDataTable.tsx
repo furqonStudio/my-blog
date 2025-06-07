@@ -160,6 +160,7 @@ function getColumns(
 
 export default function PostDataTable() {
   const { data: posts = [], isLoading: isLoadingPosts } = usePosts()
+  console.log('🚀 ~ PostDataTable ~ posts:', posts)
   const router = useRouter()
   const deletePost = useDeletePost()
 

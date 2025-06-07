@@ -14,12 +14,29 @@ type CreatePostInput = {
 }
 
 export const getPosts = async () => {
-  return await prisma.post.findMany({
+  const posts = await prisma.post.findMany({
     orderBy: { publishedAt: 'asc' },
-    include: {
-      category: true,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      content: true,
+      status: true,
+      imageUrl: true,
+      publishedAt: true,
+      author: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   })
+
+  return posts.map((post) => ({
+    ...post,
+    category: post.category?.name ?? null,
+  }))
 }
 
 export async function createPost(input: CreatePostInput) {
