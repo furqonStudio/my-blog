@@ -1,6 +1,29 @@
-import { deletePost, updatePost } from '@/features/post/post.controller'
+import {
+  deletePost,
+  getPostById,
+  updatePost,
+} from '@/features/post/post.controller'
 import { getFormFile, getFormString } from '@/utils/form'
 import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const post = await getPostById(Number(params.id))
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post tidak ditemukan' },
+        { status: 404 },
+      )
+    }
+    return NextResponse.json(post)
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: 'Gagal mengambil post' }, { status: 500 })
+  }
+}
 
 export async function DELETE(
   req: NextRequest,
