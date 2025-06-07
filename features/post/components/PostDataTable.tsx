@@ -68,7 +68,7 @@ function getColumns(
       accessorKey: 'category',
       header: 'Category',
       cell: ({ row }) => (
-        <div className="font-medium">{row.original.category?.name}</div>
+        <div className="font-medium">{row.getValue('category')}</div>
       ),
     },
     {
