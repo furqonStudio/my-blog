@@ -1,7 +1,20 @@
-import { createPost } from '@/features/post/post.controller'
+import { createPost, getPosts } from '@/features/post/post.controller'
 import { createPostSchema } from '@/features/post/post.schema'
 import { getFormFile, getFormString } from '@/utils/form'
 import { NextResponse } from 'next/server'
+
+export async function GET() {
+  try {
+    const posts = await getPosts()
+    return NextResponse.json(posts)
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json(
+      { error: 'Failed to fetch posts' },
+      { status: 500 },
+    )
+  }
+}
 
 export async function POST(request: Request) {
   try {

@@ -13,6 +13,15 @@ type CreatePostInput = {
   author?: string
 }
 
+export const getPosts = async () => {
+  return await prisma.post.findMany({
+    orderBy: { publishedAt: 'asc' },
+    include: {
+      category: true,
+    },
+  })
+}
+
 export async function createPost(input: CreatePostInput) {
   const {
     title,

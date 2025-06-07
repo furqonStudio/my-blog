@@ -13,9 +13,9 @@ import {
 import { IconDotsVertical } from '@tabler/icons-react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Post } from '../post.type'
-import { usePosts } from '../hooks/usePosts'
 import { Skeleton } from '@/components/ui/skeleton'
 import Image from 'next/image'
+import { usePosts } from '../hooks/usePosts'
 
 const columns: ColumnDef<Post>[] = [
   {
