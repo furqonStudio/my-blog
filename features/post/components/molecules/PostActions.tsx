@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button'
-import { isEditorContentEmpty } from '@/utils/editor'
 import { UseFormSetValue } from 'react-hook-form'
 import { CreatePostSchema } from '../organisms/PostForm'
 
@@ -21,10 +20,7 @@ const PostActions = ({
   image,
 }: PostActionsProps) => {
   const isAllEmpty =
-    !title?.trim() &&
-    isEditorContentEmpty(content) &&
-    !category &&
-    !(image instanceof File)
+    !title?.trim() && !content?.trim() && !category && !(image instanceof File)
 
   return (
     <div className="flex gap-2">
