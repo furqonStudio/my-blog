@@ -11,3 +11,12 @@ export const mapToPublishedPost = (post: BasePost): PublishedPost => {
     imageUrl: post.imageUrl ?? '',
   }
 }
+export function getSmartTruncatedContent(
+  html: string,
+  maxLength: number = 150,
+) {
+  const plain = html.replace(/<[^>]+>/g, '')
+  if (plain.length <= maxLength) return plain
+  const truncated = plain.slice(0, maxLength)
+  return truncated.slice(0, truncated.lastIndexOf(' ')) + '...'
+}

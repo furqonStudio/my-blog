@@ -9,12 +9,7 @@ import { formatDate } from '@/utils/formatDate'
 import Image from 'next/image'
 import Link from 'next/link'
 import { PublishedPost } from '../post.type'
-
-function stripHtmlTags(html: string): string {
-  const div = document.createElement('div')
-  div.innerHTML = html
-  return div.textContent || div.innerText || ''
-}
+import { getSmartTruncatedContent } from '../utils/posts'
 
 type Variant = 'besar' | 'menyamping' | 'biasa'
 
@@ -25,11 +20,7 @@ type Props = {
 
 export const PostCard = ({ post, variant = 'biasa' }: Props) => {
   const { title, slug, imageUrl, publishedAt, content, category, author } = post
-  const plainTextContent = stripHtmlTags(content)
-  const truncatedContent =
-    plainTextContent.length > 150
-      ? plainTextContent.substring(0, 150) + '...'
-      : plainTextContent
+  const truncatedContent = getSmartTruncatedContent(content)
 
   if (variant === 'besar') {
     return (
