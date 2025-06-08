@@ -69,6 +69,17 @@ export const getPostById = async (id: number): Promise<PostDetail | null> => {
   })
 }
 
+export const getPostBySlug = async (
+  slug: string,
+): Promise<PostDetail | null> => {
+  return await prisma.post.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+    },
+  })
+}
+
 export async function createPost(input: PostInput) {
   const {
     title,

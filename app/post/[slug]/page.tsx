@@ -1,43 +1,41 @@
-import prisma from '@/lib/prisma'
+import { PostContent } from '@/features/post/components/atomics/PostContent'
+import { getPostBySlug } from '@/features/post/post.controller'
 import { formatDate } from '@/utils/formatDate'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import React from 'react'
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const { slug } = await params
-  const post = await prisma.post.findUnique({
-    where: { slug },
-  })
-
+export default async function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params
+  const post = await getPostBySlug(slug)
   if (!post) {
     notFound()
   }
+  const { title, content, publishedAt, imageUrl, author, category } = post
 
   return (
     <article className="prose-custom dark:prose-invert prose-headings:scroll-mt-20 mx-auto max-w-3xl px-4 py-12">
-      <h1>{post.title}</h1>
-      <p className="text-muted-foreground text-sm">
-        Dipublikasikan pada {formatDate(post.publishedAt)} · oleh {post.author}{' '}
-        · {post.category}
-      </p>
-      <div className="my-6">
-        <Image
-          src={post.image}
-          alt={post.title}
-          width={800}
-          height={500}
-          className="w-full rounded-md object-cover"
-        />
-      </div>
-      <section
-        className="mt-8"
-        dangerouslySetInnerHTML={{ __html: post.content }}
-      />
+      <h1>{title}</h1>
+      {(publishedAt || author || category?.name) && (
+        <p className="text-muted-foreground text-sm">
+          {publishedAt && `Dipublikasikan pada ${formatDate(publishedAt)}`} ·{' '}
+          {author || 'Anonim'} · {category?.name}
+        </p>
+      )}
+      {imageUrl && (
+        <div className="relative aspect-video">
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            className="w-full rounded-md object-cover"
+          />
+        </div>
+      )}
+      {content ? (
+        <PostContent htmlContent={content} />
+      ) : (
+        <p className="text-muted-foreground italic">Konten tidak tersedia.</p>
+      )}{' '}
     </article>
   )
 }
