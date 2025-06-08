@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Card,
   CardContent,
@@ -7,13 +5,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { formatDate } from '@/utils/formatDate'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Post } from '@/features/post/post.type'
-import { formatDate } from '@/utils/formatDate'
+import { PublishedPost } from '../post.type'
 
 function stripHtmlTags(html: string): string {
-  if (typeof window === 'undefined') return html
   const div = document.createElement('div')
   div.innerHTML = html
   return div.textContent || div.innerText || ''
@@ -21,12 +18,12 @@ function stripHtmlTags(html: string): string {
 
 type Variant = 'besar' | 'menyamping' | 'biasa'
 
-interface PostCardProps {
-  post: Post
+type Props = {
+  post: PublishedPost
   variant?: Variant
 }
 
-export const PostCard = ({ post, variant = 'biasa' }: PostCardProps) => {
+export const PostCard = ({ post, variant = 'biasa' }: Props) => {
   const { title, slug, imageUrl, publishedAt, content, category, author } = post
   const plainTextContent = stripHtmlTags(content)
   const truncatedContent =
@@ -55,7 +52,7 @@ export const PostCard = ({ post, variant = 'biasa' }: PostCardProps) => {
             <p>
               Oleh {author || 'Anonim'} • {formatDate(publishedAt)}
             </p>
-            {category && <p>Kategori: {category.name}</p>}
+            {category && <p>Kategori: {category}</p>}
           </CardFooter>
         </Card>
       </Link>
@@ -84,20 +81,14 @@ export const PostCard = ({ post, variant = 'biasa' }: PostCardProps) => {
 
   return (
     <Link href={`/post/${slug}`}>
-      <Card
-        className="flex w-full flex-col pt-0"
-        style={{ minHeight: '380px' }}
-      >
+      <Card className="flex h-[440px] w-full flex-col pt-0">
         <div className="relative h-48 overflow-hidden rounded-t-md">
           <Image src={imageUrl} alt={title} className="object-cover" fill />
         </div>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
-        <CardContent
-          className="-mt-2"
-          style={{ flexGrow: 1, overflow: 'hidden' }}
-        >
+        <CardContent className="-mt-2">
           <p className="line-clamp-4 text-sm text-gray-700">
             {truncatedContent}
           </p>
@@ -106,7 +97,7 @@ export const PostCard = ({ post, variant = 'biasa' }: PostCardProps) => {
           <p>
             Oleh {author || 'Anonim'} • {formatDate(publishedAt)}
           </p>
-          {category && <span>Kategori: {category.name}</span>}
+          {category && <span>Kategori: {category}</span>}
         </CardFooter>
       </Card>
     </Link>

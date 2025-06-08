@@ -18,7 +18,7 @@ model Post {
   publishedAt DateTime?
   categoryId  String?
   category    Category?  @relation(fields: [categoryId], references: [id])
-  author      String?
+  author      String
 }
 
 enum PostStatus {

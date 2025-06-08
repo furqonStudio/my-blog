@@ -1,26 +1,18 @@
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { PostCard } from '@/features/post/components/PostCard'
-import prisma from '@/lib/prisma'
-import Image from 'next/image'
-import Link from 'next/link'
+import { getPublishedPosts } from '@/features/post/post.controller'
 
 export default async function Home() {
-  const posts = await prisma.post.findMany({
-    include: { category: true },
-    orderBy: { publishedAt: 'desc' },
-  })
+  const publishedPosts = await getPublishedPosts()
 
-  if (!posts || posts.length === 0) {
-    return <p className="py-10 text-center">Belum ada postingan.</p>
+  if (publishedPosts.length === 0) {
+    return (
+      <div className="py-20 text-center text-xl">
+        Belum ada post yang tersedia.
+      </div>
+    )
   }
 
-  const [mainPost, ...sidePosts] = posts
+  const [featuredPost, ...otherPosts] = publishedPosts
 
   return (
     <div>
@@ -31,21 +23,18 @@ export default async function Home() {
       <div className="mx-auto max-w-5xl px-4">
         <div className="flex flex-row gap-6">
           <div className="w-7/12">
-            <PostCard post={posts[0]} variant="besar" />
-
-            {/* <PostCard post={posts[1]} variant="biasa" /> */}
+            <PostCard post={featuredPost} variant="besar" />
           </div>
 
-          {/* Side posts */}
           <div className="flex w-5/12 flex-col gap-4">
-            {sidePosts.slice(0, 4).map((post) => (
-              <PostCard post={post} variant="menyamping" />
+            {otherPosts.slice(0, 4).map((post) => (
+              <PostCard key={post.id} post={post} variant="menyamping" />
             ))}
           </div>
         </div>
         <div className="grid grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <PostCard post={post} />
+          {otherPosts.map((post) => (
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
       </div>

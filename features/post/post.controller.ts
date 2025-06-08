@@ -2,19 +2,18 @@ import { generateFallbackTitle } from '@/features/post/utils/generateFallbackTit
 import { generateUniqueSlug } from '@/features/post/utils/generateSlug'
 import prisma from '@/lib/prisma'
 import { saveImageToPublic } from '@/utils/saveImageToPublic'
+import {
+  BasePost,
+  Post,
+  PostDetail,
+  PostInput,
+  PublishedPost,
+} from './post.type'
+import { mapToPublishedPost } from './utils/posts'
 
-type PostInput = {
-  title?: string
-  content?: string
-  status: 'DRAFT' | 'PUBLISHED'
-  categoryId?: string
-  imageBuffer?: Buffer
-  imageExt?: string
-}
-
-export const getPosts = async () => {
-  const posts = await prisma.post.findMany({
-    orderBy: { publishedAt: 'asc' },
+export const getPosts = async (): Promise<Post[]> => {
+  const posts: BasePost[] = await prisma.post.findMany({
+    orderBy: { publishedAt: 'desc' },
     select: {
       id: true,
       title: true,
@@ -25,9 +24,7 @@ export const getPosts = async () => {
       publishedAt: true,
       author: true,
       category: {
-        select: {
-          name: true,
-        },
+        select: { name: true },
       },
     },
   })
@@ -38,13 +35,36 @@ export const getPosts = async () => {
   }))
 }
 
-export const getPostById = async (id: number) => {
+export async function getPublishedPosts(): Promise<PublishedPost[]> {
+  const rawPosts: BasePost[] = await prisma.post.findMany({
+    where: {
+      status: 'PUBLISHED',
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      imageUrl: true,
+      content: true,
+      publishedAt: true,
+      author: true,
+      status: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  })
+
+  return rawPosts.map(mapToPublishedPost)
+}
+
+export const getPostById = async (id: number): Promise<PostDetail | null> => {
   return await prisma.post.findUnique({
     where: { id },
     include: {
-      category: {
-        select: { name: true },
-      },
+      category: true,
     },
   })
 }
