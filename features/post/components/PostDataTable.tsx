@@ -60,7 +60,9 @@ function getColumns(
       accessorKey: 'title',
       header: 'Title',
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('title')}</div>
+        <div className="max-w-[200px] truncate font-medium">
+          {row.getValue('title')}
+        </div>
       ),
       enableHiding: false,
     },
