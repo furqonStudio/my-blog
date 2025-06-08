@@ -1,24 +1,23 @@
 'use client'
 
-import { Form } from '@/components/ui/form'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { createPostSchema } from '@/features/post/post.schema'
-import { z } from 'zod'
-import { Input } from '@/components/ui/input'
+import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor'
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import EditorClient from '../EditorClient'
+import { Input } from '@/components/ui/input'
+import { createPostSchema } from '@/features/post/post.schema'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { CategorySelector } from '../molecules/CategorySelector'
 import { FeatureImageUpload } from '../molecules/FeatureImageUpload'
 import PostActions from '../molecules/PostActions'
-import { useEffect } from 'react'
-import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor'
 
 export type CreatePostSchema = z.infer<typeof createPostSchema>
 
@@ -81,7 +80,10 @@ export const PostForm = ({
               <FormItem>
                 <FormLabel>Konten</FormLabel>
                 <FormControl>
-                  <SimpleEditor />
+                  <SimpleEditor
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
