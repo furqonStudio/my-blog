@@ -1,66 +1,53 @@
 import { PrismaClient } from '@/app/generated/prisma'
+import { faker } from '@faker-js/faker'
 
 const prisma = new PrismaClient()
 
-const postData = [
-  {
-    title: 'Post Pertama',
-    slug: 'post-pertama',
-    imageUrl: 'https://picsum.photos/600/400?random=1',
-    publishedAt: new Date(),
-    content: 'Ini adalah konten post pertama.',
-    categoryName: 'Teknologi',
-    author: 'Furqon',
-    status: 'PUBLISHED',
-  },
-  {
-    title: 'Post Kedua',
-    slug: 'post-kedua',
-    imageUrl: 'https://picsum.photos/600/400?random=2',
-    publishedAt: new Date(),
-    content: 'Konten post kedua di sini.',
-    categoryName: 'Pemrograman',
-    author: 'Furqon',
-    status: 'DRAFT',
-  },
-  {
-    title: 'Post Ketiga',
-    slug: 'post-ketiga',
-    imageUrl: 'https://picsum.photos/600/400?random=3',
-    publishedAt: new Date(),
-    content: 'Halo, ini adalah post ketiga.',
-    categoryName: 'Umum',
-    author: 'Furqon',
-    status: 'PUBLISHED',
-  },
-] as const
+const categories = [
+  'Teknologi',
+  'Pemrograman',
+  'Umum',
+  'Seni',
+  'Bisnis',
+  'Kesehatan',
+]
 
 async function main() {
   console.log('🚀 Menjalankan seed...')
 
-  for (const post of postData) {
+  // Pastikan semua kategori dibuat
+  const categoryMap: Record<string, { id: string; name: string }> = {}
+
+  for (const name of categories) {
     const category = await prisma.category.upsert({
-      where: { name: post.categoryName },
+      where: { name },
       update: {},
-      create: { name: post.categoryName },
+      create: { name },
     })
+    categoryMap[name] = category
+  }
+
+  // Generate 100 post
+  for (let i = 1; i <= 100; i++) {
+    const categoryName = faker.helpers.arrayElement(categories)
+    const category = categoryMap[categoryName]
 
     await prisma.post.create({
       data: {
-        title: post.title,
-        slug: post.slug,
-        imageUrl: post.imageUrl,
-        publishedAt: post.publishedAt,
-        content: post.content,
-        author: post.author,
-        status: post.status,
+        title: faker.lorem.sentence(),
+        slug: `post-${i}-${faker.lorem.slug()}`,
+        imageUrl: `https://picsum.photos/600/400?random=${i}`,
+        publishedAt: faker.date.past(),
+        content: faker.lorem.paragraphs(3),
+        author: faker.person.fullName(),
+        status: faker.helpers.arrayElement(['DRAFT', 'PUBLISHED']),
         category: {
           connect: { id: category.id },
         },
       },
     })
 
-    console.log(`✅ Post "${post.title}" berhasil ditambahkan`)
+    console.log(`✅ Post ${i} berhasil dibuat.`)
   }
 
   console.log('🎉 Seed selesai!')

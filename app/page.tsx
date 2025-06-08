@@ -37,8 +37,8 @@ export default async function Home() {
           </div>
 
           {/* Side posts */}
-          <div className="flex w-5/12 flex-col gap-6">
-            {sidePosts.slice(0, 3).map((post) => (
+          <div className="flex w-5/12 flex-col gap-4">
+            {sidePosts.slice(0, 4).map((post) => (
               <PostCard post={post} variant="menyamping" />
             ))}
           </div>
