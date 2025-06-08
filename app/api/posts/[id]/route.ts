@@ -8,10 +8,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params
+    const { id } = params
 
     const post = await getPostById(Number(id))
 
@@ -30,10 +30,10 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params
+    const { id } = params
 
     if (!id) {
       return NextResponse.json(
@@ -59,10 +59,10 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const formData = await req.formData()
 
     const title = getFormString(formData, 'title')
